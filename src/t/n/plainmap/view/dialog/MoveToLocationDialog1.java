@@ -59,9 +59,6 @@ public class MoveToLocationDialog1 extends JDialog implements ActionListener {
 		os = AppConfig.getOsType();
 		initComponents();
 
-		//TODO 状況に応じてGotoボタンの使用可否を切り替える。
-		//rightButton.setEnabled(!longitudeTextField0.getText().isEmpty() && !latitudeTextField0.getText().isEmpty());
-
 		leftButton.addActionListener(this);
 		rightButton.addActionListener(this);
 
@@ -88,9 +85,9 @@ public class MoveToLocationDialog1 extends JDialog implements ActionListener {
     				lonSecText = "0";
     			}
 				if(!lonDegText.isEmpty()) {
-					lon = LonLatUtil.parseDegMinSec(lonDegText, lonMinText, lonSecText);
+					lon = LonLatUtil.parseDegMinSec(lonDegText, lonMinText, lonSecText, true);
 					if(Double.isNaN(lon)) {
-						JOptionPane.showMessageDialog(getParent(), "分あるいは秒の欄は60未満を入力してください");
+						JOptionPane.showMessageDialog(getParent(), "度の欄は180未満、分あるいは秒の欄は60未満を入力してください");
 						return;
 					}
 				} else {
@@ -116,9 +113,9 @@ public class MoveToLocationDialog1 extends JDialog implements ActionListener {
     				latSecText = "0";
     			}
     			if(!latDegText.isEmpty()) {
-    				lat = LonLatUtil.parseDegMinSec(latDegText, latMinText, latSecText);
+    				lat = LonLatUtil.parseDegMinSec(latDegText, latMinText, latSecText, true);
     				if(Double.isNaN(lat)) {
-    					JOptionPane.showMessageDialog(getParent(), "分あるいは秒の欄は60未満を入力してください");
+    					JOptionPane.showMessageDialog(getParent(), "度の欄は90未満、分あるいは秒の欄は60未満を入力してください");
     					return;
     				}
     			} else {

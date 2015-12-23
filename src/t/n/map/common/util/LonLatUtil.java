@@ -140,7 +140,7 @@ public class LonLatUtil {
 //	public final static String latitudeDegMinSec = "北緯##°00′00.000″";
 
 	/**
-	 * 度分秒("153°59′11″")形式で表現された緯度・経度を、153.98638888のような数値に変換する。
+	 * 度分秒("153°59′11.0″")形式で表現された緯度・経度を、153.98638888のような数値に変換する。
 	 * @param arg 度分秒形式で表現された緯度あるいは経度
 	 * @return 実数形式に変換された数値 変換できなければNaNを返す。
 	 * boolean isRestrictedを追加したメソッドを追加したが、引数を追加すると呼び出し側を全て修正する
@@ -152,42 +152,51 @@ public class LonLatUtil {
 
 	// TODO pをそのまま使って、パース可能かどうかをチェックする別のメソッドを追加
 	/**
-	 * 度分秒("153°59′11″")形式で表現された緯度・経度を、153.98638888のような数値に変換する。
+	 * 度分秒("153°59′11.0″")形式で表現された緯度・経度を、153.98638888のような数値に変換する。
 	 * 「′」と「″」は引用符とは別の文字なので注意すること。(それぞれ、「ふん」「びょう」と入力して変換すると候補に表示される)
 	 * 値の範囲の有効性もチェックする。
 	 * @param arg 度分秒形式で表現された緯度あるいは経度
-	 * @param isRestricted 分、秒の単位が60以上ならエラーとする(NaNを返す)か否か
+	 * @param isStrict 度の単位が180以上、分、秒の単位が60以上ならエラーとする(NaNを返す)か否か
 	 * @return 実数形式に変換された数値 変換できなければNaNを返す。
 	 */
-	public static double parseDegMinSec(String arg, boolean isRestricted) {
+	public static double parseDegMinSec(String arg, boolean isStrict) {
 		double result = Double.NaN;
 		Matcher m = p.matcher(arg);
 		if(m.find() && m.groupCount() == 4) {
 			double deg = Double.parseDouble(m.group(1));
+			if(isStrict && deg >= 180) return result;
 			double min = Double.parseDouble(m.group(2));
-			if(isRestricted && min >= 60) return result;
+			if(isStrict && min >= 60) return result;
 			double sec = Double.parseDouble(m.group(3));
-			if(isRestricted && sec >= 60) return result;
+			if(isStrict && sec >= 60) return result;
 			result = deg + (min / 60) + (sec / 3600);
 		}
 		return result;
 	}
 
 	/**
-	 * "153 °59 ′11″"という配列で表現された緯度・経度を、153.98638888のような数値に変換する。
-	 * TODO 値の範囲の有効性もチェックする。Lon/Latを分離。例外を投げる？
+	 * "153 °59 ′11.0″"という配列で表現された緯度・経度を、153.98638888のような数値に変換する。
 	 * @param arg
-	 * @return
+	 * @return　実数形式に変換された数値 変換できなければNaNを返す。
 	 */
 	public static double parseDegMinSec(String arg0, String arg1, String arg2) {
+		return parseDegMinSec(arg0, arg1, arg2, false);
+	}
+
+	/**
+	 * "153 °59 ′11.0″"という配列で表現された緯度・経度を、153.98638888のような数値に変換する。
+	 * 値の範囲の有効性もチェックし、無効ならNaNを返す。
+	 * @param arg0 度 arg1 分 arg2 秒 isStrict 度が180未満、分秒が60未満であるか厳密にチェックする場合true
+	 * @return 実数形式に変換された数値 変換できなければNaNを返す。
+	 */
+	public static double parseDegMinSec(String arg0, String arg1, String arg2, boolean isStrict) {
 		double result = Double.NaN;
 		double deg = Double.parseDouble(arg0);
+		if(isStrict && deg >= 180) return result;
 		double min = Double.parseDouble(arg1);
-//		if(min >= 60) return result;
-//		if(min > 60) return result;
+		if(isStrict && min >= 60) return result;
 		double sec = Double.parseDouble(arg2);
-//		if(sec >= 60) return result;
-//		if(sec > 60) return result;
+		if(isStrict && sec >= 60) return result;
 		result = deg + (min / 60) + (sec / 3600);
 
 		return result;

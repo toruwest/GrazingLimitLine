@@ -17,6 +17,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -214,10 +215,12 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	 * TODO アプリのアイコン。実行形式化。バージョン番号の付与ルール。
 	 * DONE アプリケーションディレクトリーを表示するダイアログを追加
 	 * DONE ESCボタンでダイアログを閉じる
+	 * TODO サーバーへのアクセスが集中するので、緩和(DelayQueueを使う、地図でズームレベルを変えるときにリクエストをキャンセルする)
 	 * FIXME Proxy経由での動作の確認(現状ではログに"null"とだけ表示される)
 	 * 以下の方法では設定が認識されるが、proxyサーバー上でアクセスが確認できない。
-	 * TODO サーバーへのアクセスが集中するので、緩和(DelayQueueを使う、地図でズームレベルを変えるときにリクエストをキャンセルする)
 	 *  java -Dhttp.proxyHost=localhost -Dhttp.proxyPort=8089 -jar xxxx.jar
+	 * TODO 指定された経度緯度へ移動するためのダイアログで、緯度・経度の分と秒のフィールドに60以上の値を入力してもノーチェック
+	 * TODO 指定された経度緯度へ移動するためのダイアログから移動した場所に、何かマーカーを表示した方がわかりやすい。
 	 * DONE 指定された経度緯度へ移動するためのダイアログで、緯度・経度のフィールドにペーストできない
 	 * DONE proxyポート番号のフィールドに対し、以前の数字の設定ができない
 	 * DONE 特定の限界線データで、線が乱れる。Y座標がゼロになってる？分の単位が６０以上となっていた。
@@ -504,22 +507,33 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 			}
 		});
 
+        gpsEnableCheckBox.addActionListener(new ActionListener() {
+        	@Override
+        	public void actionPerformed(ActionEvent e) {
+        		boolean selected = gpsEnableCheckBox.isSelected();
+				gpsPortSelect.setEditable(selected);
+				setGpsEnabled(selected);
+        	}
+        });
+
 		final GpsEventListener l = this;
 		final List<CommPortIdentifier> serialPortCandidates = GpsSerialDeviceUtil.getCandidateSerialPorts(AppConfig.getOsType());
-//		ComboBoxModel<CommPortIdentifier> gpsPortModel = new DefaultComboBoxModel<CommPortIdentifier>();
-		GpsDeviceComboModel gpsPortModel = new GpsDeviceComboModel(serialPortCandidates);
-//		for(CommPortIdentifier cpi : serialPortCandidates) {
-//			gpsPortModel.addAll();
-//			gpsPortModel.
-//		}
+
+		Vector<String> ports = new Vector<>();
+		for(CommPortIdentifier cpi : serialPortCandidates) {
+			ports.add(cpi.getName());
+		}
+
+		ComboBoxModel<String> gpsPortModel = new DefaultComboBoxModel<>(ports);
 		gpsPortSelect.setModel(gpsPortModel);
 		gpsPortSelect.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				final CommPortIdentifier targetPort = (CommPortIdentifier)gpsPortSelect.getSelectedItem();
+				int targetPortIndex = gpsPortSelect.getSelectedIndex();
+				final CommPortIdentifier targetPort = serialPortCandidates.get(targetPortIndex);
+
 				if(targetPort != null) {
 					SwingWorker<Object, Object> sw = new SwingWorker<Object, Object>() {
-
 						@Override
 						protected Object doInBackground() throws Exception {
 							gpsHandler = new GpsSerialDeviceHandler(targetPort, l);
@@ -680,6 +694,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 			log(currentLocation.getLatitude() + ", " + currentLocation.getLongitude());
 			log("GPS :" + LonLatUtil.getLongitudeJapaneseString(currentLocation.getLongitude()) + ", " + LonLatUtil.getLatitudeJapaneseString(currentLocation.getLatitude()));
 			mapPanel.setCurrentGpsLocation(currentLocation);
+			gpsStatusLabel.setText("GPS:有効");
 		} else {
 			logger.log(Level.WARNING, "locationInfoがnullでした。");
 		}
@@ -1026,43 +1041,25 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 
         gpsPanel = new JPanel();
         gpsEnableCheckBox = new JCheckBox();
+		gpsEnableCheckBox.setText("GPS有効");
+
         gpsPortSelect = new JComboBox<>();
         jLabel4 = new JLabel();
-        gpsLongitudejTextField = new JTextField();
-        jLabel5 = new JLabel();
-        gpsLatitudeTextField = new JTextField();
-        moveGpsLocationButton = new JButton();
-        gpsStatusLabel = new JLabel();
-
-        gpsEnableCheckBox.setEnabled(false);
-        gpsPortSelect.setEnabled(false);
-        gpsLongitudejTextField.setEnabled(false);
-        gpsLatitudeTextField.setEnabled(false);
-        moveGpsLocationButton.setEnabled(false);
-
-//        gpsPanel.setBackground(new java.awt.Color(255, 51, 0));
-        gpsPanel.setBackground(new java.awt.Color(255, 204, 204));
-
-        gpsEnableCheckBox.setText("GPS有効");
-        gpsEnableCheckBox.setForeground(Color.GRAY);
-
-//        gpsPortSelect.setModel(new DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-
         jLabel4.setText("経度");
-        jLabel4.setForeground(Color.GRAY);
-
-        gpsLongitudejTextField.setText("");
-
+        jLabel5 = new JLabel();
         jLabel5.setText("緯度");
-        jLabel5.setForeground(Color.GRAY);
+        gpsLongitudejTextField = new JTextField();
+        gpsLatitudeTextField = new JTextField();
+        gpsStatusLabel = new JLabel();
+        gpsLongitudejTextField.setEditable(false);
+        gpsLatitudeTextField.setEditable(false);
 
-        gpsLatitudeTextField.setText("");
-
+        moveGpsLocationButton = new JButton();
         moveGpsLocationButton.setText("GPSの位置へ移動");
 
-        gpsStatusLabel.setText("GPS:未接続");
-        gpsStatusLabel.setForeground(Color.GRAY);
+        setGpsEnabled(false);
 
+        gpsPanel.setBackground(new java.awt.Color(255, 204, 204));
         GroupLayout gpsPanelLayout = new GroupLayout(gpsPanel);
         gpsPanel.setLayout(gpsPanelLayout);
         gpsPanelLayout.setHorizontalGroup(
@@ -1159,6 +1156,28 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 
         frame.pack();
     }// </editor-fold>
+
+	private void setGpsEnabled(boolean b) {
+		gpsPortSelect.setEnabled(true);
+		moveGpsLocationButton.setEnabled(b);
+		if(b) {
+//			gpsStatusLabel.setText("GPS:未接続");
+			gpsStatusLabel.setForeground(Color.BLACK);
+			jLabel4.setForeground(Color.BLACK);
+			jLabel5.setForeground(Color.BLACK);
+//			gpsLongitudejTextField.setText("");
+//			gpsLatitudeTextField.setText("");
+			gpsPortSelect.setForeground(Color.BLACK);
+		} else {
+			gpsStatusLabel.setText("GPS:無効");
+			gpsStatusLabel.setForeground(Color.GRAY);
+			jLabel4.setForeground(Color.GRAY);
+			jLabel5.setForeground(Color.GRAY);
+			gpsLongitudejTextField.setText("");
+			gpsLatitudeTextField.setText("");
+			gpsPortSelect.setForeground(Color.GRAY);
+		}
+	}
 
 	private void log(String msg) {
 		if(logger.isLoggable(Level.FINE)) {
@@ -1257,7 +1276,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
     private JTextField gpsLatitudeTextField;
     private JTextField gpsLongitudejTextField;
     private JPanel gpsPanel;
-    private JComboBox<CommPortIdentifier> gpsPortSelect;
+    private JComboBox<String> gpsPortSelect;
     private JLabel gpsStatusLabel;
     private JButton moveGpsLocationButton;
 	private JScrollPane jScrollPane2;

@@ -5,6 +5,7 @@ import gnu.io.CommPortIdentifier;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Vector;
 
 import t.n.map.OsType;
 
@@ -14,8 +15,9 @@ public class GpsSerialDeviceUtil {
 	}
 
 	public static List<CommPortIdentifier> getCandidateSerialPorts(OsType osType) {
-		List<CommPortIdentifier> candidateDevices = new ArrayList<>();
+		List<CommPortIdentifier> candidateDevices = new Vector<>();
 		Enumeration<CommPortIdentifier> portCandidates = CommPortIdentifier.getPortIdentifiers();
+
 		while(portCandidates.hasMoreElements()) {
 			CommPortIdentifier port = portCandidates.nextElement();
 			String portName = port.getName();
