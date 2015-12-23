@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project MapPlain4 with Jar-in-Jar Loader">
+    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
+    <!--ANT 1.7 is required                                        -->
+    <target name="create_run_jar">
+        <jar destfile="/Users/toru/Documents/workspace/MapPlain4/GrazingLimitLine.jar">
+            <manifest>
+                <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
+                <attribute name="Rsrc-Main-Class" value="t.n.plainmap.view.GrazingLimitLineViewer2"/>
+                <attribute name="Class-Path" value="."/>
+                <attribute name="Rsrc-Class-Path" value="./ nrjavaserial-3.7.5.1.jar httpclient-4.5.jar slf4j-api-1.7.12.jar async-http-client-1.9.31.jar lombok.jar junit.jar org.hamcrest.core_1.3.0.v201303031735.jar"/>
+            </manifest>
+            <zipfileset src="jar-in-jar-loader.zip"/>
+            <fileset dir="/Users/toru/Documents/workspace/MapPlain4/bin">
+            	<exclude name="**/.DS_Store"></exclude>
+            </fileset>
+            <zipfileset dir="/java/mvn-repo/com/neuronrobotics/nrjavaserial/3.7.5.1" includes="nrjavaserial-3.7.5.1.jar"/>
+            <zipfileset dir="/java/mvn-repo/org/apache/httpcomponents/httpclient/4.5" includes="httpclient-4.5.jar"/>
+            <fileset dir="/java/mvn-repo/org/apache/httpcomponents/httpcomponents-core/4.4.1"/>
+            <zipfileset dir="/java/mvn-repo/org/slf4j/slf4j-api/1.7.12" includes="slf4j-api-1.7.12.jar"/>
+            <zipfileset dir="/java/mvn-repo/com/ning/async-http-client/1.9.31" includes="async-http-client-1.9.31.jar"/>
+            <zipfileset dir="/java" includes="lombok.jar"/>
+            <zipfileset dir="/Applications/eclipse-luna/plugins/org.junit_4.11.0.v201303080030" includes="junit.jar"/>
+            <zipfileset dir="/Applications/eclipse-luna/plugins" includes="org.hamcrest.core_1.3.0.v201303031735.jar"/>
+        </jar>
+    </target>
+</project>
