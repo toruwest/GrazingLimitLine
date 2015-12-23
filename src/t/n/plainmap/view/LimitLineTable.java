@@ -79,7 +79,7 @@ public class LimitLineTable extends JTable {
 								BufferedImage rawImage = ImageIO.read(f);
 								BufferedImage resized = resize(rawImage, 600, 600);
 								ImageIcon icon = new ImageIcon(resized);
-								JOptionPane.showMessageDialog(null, icon, filename, JOptionPane.INFORMATION_MESSAGE);
+								JOptionPane.showMessageDialog(null, icon, filename, JOptionPane.PLAIN_MESSAGE);
 							} catch (IOException e1) {
 								e1.printStackTrace();
 							}

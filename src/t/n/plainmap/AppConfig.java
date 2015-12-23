@@ -7,13 +7,14 @@ import t.n.map.OsType;
 
 public class AppConfig {
 	private static final String APP_NAME = "GrazingLimitLine";
+	public static String appVersion = "1.1";
+	public static final String releaseDate = "2015年12月23日";
 
 	private static final String MAP_CACHE_DIR = "map-cache";
 	private static final String GRAZING_LIMIT_LINE_DATA_DIR = "grazingLimitLineData";
 	private static String appDataDir;
 	private static OsType osType;
 
-	public static String appVersion = "1.0";
 
 	private static final File cacheDir;
 	private static final File grazingLimitLineDataDir;

@@ -86,6 +86,7 @@ import t.n.plainmap.MapType;
 import t.n.plainmap.MouseMovementObserver;
 import t.n.plainmap.TileImageManagerImpl;
 import t.n.plainmap.dto.LimitLineDatum;
+import t.n.plainmap.view.dialog.AppFolderShowDialog;
 import t.n.plainmap.view.dialog.GotoUserHomeLocationDialog;
 import t.n.plainmap.view.dialog.MoveToLocationDialog1;
 import t.n.plainmap.view.dialog.MoveToLocationDialog2;
@@ -182,7 +183,9 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	 * Occult4でも出せる？http://astro-limovie.info/jclo/occult/occult.html にある、Occult4のスクリーンショットには、"Short output"というチェックボックスがある。
 	 * Occult4は http://lunar-occultations.com/iota/occult4.htm から入手できる。2016年の接食の一覧を出力してみた。
 	 * TODO 2015年版も出して、接食限界線ルートWebで用意されているデータと比べて見る。
-	 *
+	 * Occult4をもう一度開いて、接食限界線ルートデータの元となりそうなデータを出せる方法を探したけど、わかりませんでした。
+		“Lunar predictions”の”Predictions of multiple objects for multiple sites”だと思われる。
+
 	 * http://www2.wbs.ne.jp/~spica/index.files/Page307.htmから各種ツール(Windows専用)がダウンロード可能となっている。これらのツールと接食限界線ルートWebの関係は
 	 * http://www2.wbs.ne.jp/~spica/Grazing/tools/RouteWebManual.pdf の30ページ以降に書かれている。 Excelが無いので試せない。
 	 * 接食限界線ルートWebで提供されているテキストファイルは、相馬氏ではなく、鈴木氏が作成したものと思われる。
@@ -207,11 +210,14 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	 * DONE 観測地候補のテーブルで表示する緯度・経度について、度分秒形式と実数形式を切り替える。
 	 * TODO 観測地候補のテーブルの内容から、クリップボードにコピーするテキストは、上の使い方の項目を参照
 	 * DONE 「ホーム」ダイアログで表示する緯度・経度について、度分秒形式と実数形式を併記する。
-	 * TODO Windowsでの動作確認。
+	 * TODO Windowsでの動作確認。(COMポート)
 	 * TODO アプリのアイコン。実行形式化。バージョン番号の付与ルール。
 	 * DONE アプリケーションディレクトリーを表示するダイアログを追加
 	 * DONE ESCボタンでダイアログを閉じる
 	 * FIXME Proxy経由での動作の確認(現状ではログに"null"とだけ表示される)
+	 * 以下の方法では設定が認識されるが、proxyサーバー上でアクセスが確認できない。
+	 * TODO サーバーへのアクセスが集中するので、緩和(DelayQueueを使う、地図でズームレベルを変えるときにリクエストをキャンセルする)
+	 *  java -Dhttp.proxyHost=localhost -Dhttp.proxyPort=8089 -jar xxxx.jar
 	 * DONE 指定された経度緯度へ移動するためのダイアログで、緯度・経度のフィールドにペーストできない
 	 * DONE proxyポート番号のフィールドに対し、以前の数字の設定ができない
 	 * DONE 特定の限界線データで、線が乱れる。Y座標がゼロになってる？分の単位が６０以上となっていた。
@@ -272,8 +278,9 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 		}
 
 		if(isShowInitialDialog) {
-			String message = "星食限界線のデータは、" + AppConfig.getGrazingLimitLineDataDir() + " に格納してください。";
-			JOptionPane.showMessageDialog(frame, message);
+//			String message = "星食限界線のデータは、" + AppConfig.getGrazingLimitLineDataDir() + " に格納してください。";
+//			JOptionPane.showMessageDialog(frame, message);
+			new AppFolderShowDialog(null, true).setVisible(true);
 			//proxy設定画面を開く。
 			if(proxyConfigDialog == null) createProxyConfigDialog();
 			proxyConfigDialog.setVisible(true);
@@ -968,16 +975,16 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
         );
 
         buttonPanel.setBackground(new java.awt.Color(255, 204, 204));
-        longitudeLabel = new JLabel("経度:");
+        longitudeLabel = new JLabel("経度");
         longitudeText = new JTextField();
         longitudeText.setEditable(false);
-        longitudeText.setText("経度"); // NOI18N
+        longitudeText.setText(""); // NOI18N
         longitudeText.setName("lon"); // NOI18N
 
-        latitudeLabel = new JLabel("緯度:");
+        latitudeLabel = new JLabel("緯度");
         latitudeText = new JTextField();
         latitudeText.setEditable(false);
-        latitudeText.setText("緯度"); // NOI18N
+        latitudeText.setText(""); // NOI18N
         latitudeText.setName("Lat"); // NOI18N
 
         GroupLayout buttonPanelLayout = new GroupLayout(buttonPanel);
@@ -1033,23 +1040,28 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
         gpsLatitudeTextField.setEnabled(false);
         moveGpsLocationButton.setEnabled(false);
 
-        gpsPanel.setBackground(new java.awt.Color(255, 51, 0));
+//        gpsPanel.setBackground(new java.awt.Color(255, 51, 0));
+        gpsPanel.setBackground(new java.awt.Color(255, 204, 204));
 
         gpsEnableCheckBox.setText("GPS有効");
+        gpsEnableCheckBox.setForeground(Color.GRAY);
 
 //        gpsPortSelect.setModel(new DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
         jLabel4.setText("経度");
+        jLabel4.setForeground(Color.GRAY);
 
         gpsLongitudejTextField.setText("");
 
         jLabel5.setText("緯度");
+        jLabel5.setForeground(Color.GRAY);
 
         gpsLatitudeTextField.setText("");
 
         moveGpsLocationButton.setText("GPSの位置へ移動");
 
         gpsStatusLabel.setText("GPS:未接続");
+        gpsStatusLabel.setForeground(Color.GRAY);
 
         GroupLayout gpsPanelLayout = new GroupLayout(gpsPanel);
         gpsPanel.setLayout(gpsPanelLayout);
@@ -1090,9 +1102,10 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
                 .addContainerGap())
         );
 
-        statusPanel.setBackground(new java.awt.Color(153, 255, 153));
+//        statusPanel.setBackground(new java.awt.Color(153, 255, 153));
+        statusPanel.setBackground(new java.awt.Color(255, 204, 204));
 
-        statusMessageLabel.setBackground(new java.awt.Color(255, 204, 204));
+//        statusMessageLabel.setBackground(new java.awt.Color(255, 204, 204));
         statusMessageLabel.setText("");
 
         GroupLayout statusPanelLayout = new GroupLayout(statusPanel);

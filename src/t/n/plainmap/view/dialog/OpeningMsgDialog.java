@@ -19,7 +19,7 @@ import t.n.plainmap.AppConfig;
 public class OpeningMsgDialog extends JDialog {
 	private static final String TEXT = "<html>"+
 "<center>GazingLimitLine バージョン " + AppConfig.appVersion + "</center>"+
-"<center>公開日: 2015年12月22日</center>"+
+"<center>公開日: " + AppConfig.releaseDate + "</center>"+
 "<center>著作権者：toruwest</center>"+
 "<h3>このソフトについて</h3>"+
 "このソフトは、星食の限界線データを用いて、地図上で観測地の候補を検討するために使います。<br>" +
