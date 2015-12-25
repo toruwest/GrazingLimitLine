@@ -86,7 +86,8 @@ import t.n.plainmap.MapPreference;
 import t.n.plainmap.MapType;
 import t.n.plainmap.MouseMovementObserver;
 import t.n.plainmap.TileImageManagerImpl;
-import t.n.plainmap.dto.LimitLineDatum;
+import t.n.plainmap.dto.ILimitLineDatum;
+import t.n.plainmap.dto.LimitLineDatumJCLO;
 import t.n.plainmap.view.dialog.AppFolderShowDialog;
 import t.n.plainmap.view.dialog.GotoUserHomeLocationDialog;
 import t.n.plainmap.view.dialog.MoveToLocationDialog1;
@@ -157,7 +158,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	private OpeningMsgDialog openingMsgDialog;
 	private ProxyConfigDialog proxyConfigDialog;
 
-	private List<LimitLineDatum> limitLineData;
+	private List<ILimitLineDatum> limitLineData;
 	private MapParam mapParam;
 
 	private Color mapTypeChangeButtonDefaultColor;
@@ -200,10 +201,10 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	 * TODO IRiot(接食現象のレポート作成ソフト)へ経度緯度を転記するため、クリップボードへのコピー(IRiotの「"限界線ルート"より」が認識するフォーマットが不明なので誰かに聞く。鈴木寿さん?)
 	 * TODO 「限界線ルートデータ」(鈴木氏のWebアプリの名前) にある「標高補正」機能のアルゴリズムが不明。非対応で良い？
 	 * TODO 緯度経度から住所へ変換するWebサービスとして、http://developer.yahoo.co.jp/webapi/map/openlocalplatform/v1/reversegeocoder.htmlというのがある。API KEYの取得が必要。
-	 * TODO マウスの位置の緯度経度に対応した高度データを表示する。確か国土地理院のWebサービスがあった。
+	 * TODO マウスの位置の緯度経度に対応した高度データを表示する。国土地理院のWebサービス:http://maps.gsi.go.jp/development/api.html
 	 *
 	 * TODO 限界線のポップアップが重なることがあるので、対策。
-	 * TODO 限界線に使える色のバリエーションを最低でも８つくらいに増やしたい。
+	 * DONE 限界線に使える色のバリエーションを最低でも８つくらいに増やしたい。
 	 * DONE 航空写真の表示は特定のズームレベル(15)以上の場合のみ有効とする(広域表示時に航空写真にするのは無意味)。15以上で航空写真がないところがあるが、NO DATAと表示する。
 	 * DONE 航空写真に切り替えても表示されない(標準地図のまま)。
 	 * DONE 航空写真に切り替えてから、ズームレベルを下げていくと、意図せず航空写真を読み込んでしまう。強制的に標準地図に切り替える。
@@ -211,7 +212,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	 * DONE 観測地候補のテーブルで表示する緯度・経度について、度分秒形式と実数形式を切り替える。
 	 * TODO 観測地候補のテーブルの内容から、クリップボードにコピーするテキストは、上の使い方の項目を参照
 	 * DONE 「ホーム」ダイアログで表示する緯度・経度について、度分秒形式と実数形式を併記する。
-	 * TODO Windowsでの動作確認。(COMポート)
+	 * DONE Windowsでの動作確認。(COMポート)
 	 * TODO アプリのアイコン。実行形式化。バージョン番号の付与ルール。
 	 * DONE アプリケーションディレクトリーを表示するダイアログを追加
 	 * DONE ESCボタンでダイアログを閉じる
@@ -219,7 +220,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	 * FIXME Proxy経由での動作の確認(現状ではログに"null"とだけ表示される)
 	 * 以下の方法では設定が認識されるが、proxyサーバー上でアクセスが確認できない。
 	 *  java -Dhttp.proxyHost=localhost -Dhttp.proxyPort=8089 -jar xxxx.jar
-	 * TODO 指定された経度緯度へ移動するためのダイアログで、緯度・経度の分と秒のフィールドに60以上の値を入力してもノーチェック
+	 * DONE 指定された経度緯度へ移動するためのダイアログで、緯度・経度の分と秒のフィールドに60以上の値を入力してもノーチェック
 	 * TODO 指定された経度緯度へ移動するためのダイアログから移動した場所に、何かマーカーを表示した方がわかりやすい。
 	 * DONE 指定された経度緯度へ移動するためのダイアログで、緯度・経度のフィールドにペーストできない
 	 * DONE proxyポート番号のフィールドに対し、以前の数字の設定ができない

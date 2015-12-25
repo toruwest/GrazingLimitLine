@@ -4,17 +4,18 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.geom.GeneralPath;
 
-import t.n.plainmap.dto.LimitLineDatum;
+import t.n.plainmap.dto.ILimitLineDatum;
+import t.n.plainmap.dto.LimitLineDatumJCLO;
 
 public class EventDescrition {
 	private static final int LEADER_LINE_DELTA_Y = 10;
 	private static final int LEADER_LINE_DELTA_X = 10;
 	private final Point screenCoord;
-	private final LimitLineDatum datum;
+	private final ILimitLineDatum datum;
 	GeneralPath line = new GeneralPath();
 	private final String label;
 
-	public EventDescrition(Point screenCoord, int moveX, int moveY, LimitLineDatum datum) {
+	public EventDescrition(Point screenCoord, int moveX, int moveY, ILimitLineDatum datum) {
 		this.screenCoord = screenCoord;
 		this.datum = datum;
 		line.moveTo(screenCoord.x + moveX, screenCoord.y + moveY);

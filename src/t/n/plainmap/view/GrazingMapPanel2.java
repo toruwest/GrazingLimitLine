@@ -16,7 +16,8 @@ import t.n.plainmap.EventDescrition;
 import t.n.plainmap.ITileImageManager;
 import t.n.plainmap.MapParam;
 import t.n.plainmap.MouseMovementObserver;
-import t.n.plainmap.dto.LimitLineDatum;
+import t.n.plainmap.dto.ILimitLineDatum;
+import t.n.plainmap.dto.LimitLineDatumJCLO;
 
 public class GrazingMapPanel2 extends MapPanel implements ILimitLineTableEventListener {
 	private static final int MARKER_RAD = 10;
@@ -28,7 +29,7 @@ public class GrazingMapPanel2 extends MapPanel implements ILimitLineTableEventLi
 	//TableModelとインスタンスを共有する。
 	private List<LonLat> observerLocationList = null;
 	private LonLat gpsLocation;
-	private List<LimitLineDatum> limitLineData;
+	private List<ILimitLineDatum> limitLineData;
 
 	public GrazingMapPanel2() {
 		super();
@@ -48,26 +49,26 @@ public class GrazingMapPanel2 extends MapPanel implements ILimitLineTableEventLi
 
 	@Override
 	public void notifyShowStatusChanged(int row, boolean b) {
-		LimitLineDatum datum = limitLineData.get(row);
+		ILimitLineDatum datum = limitLineData.get(row);
 		datum.setVisible(b);
 		repaint();
 	}
 
 	@Override
 	public void notifyHilightStatusChanged(int row, boolean b) {
-		LimitLineDatum datum = limitLineData.get(row);
+		ILimitLineDatum datum = limitLineData.get(row);
 		datum.setHilighted(b);
 		repaint();
 	}
 
 	public void setShowAllStatusChanged(boolean b) {
-		for(LimitLineDatum datum : limitLineData) {
+		for(ILimitLineDatum datum : limitLineData) {
 			datum.setVisible(b);
 		}
 		repaint();
 	}
 
-	public void setLimitLines(List<LimitLineDatum> limitLineData) {
+	public void setLimitLines(List<ILimitLineDatum> limitLineData) {
 		this.limitLineData = limitLineData;
 	}
 
@@ -88,7 +89,7 @@ public class GrazingMapPanel2 extends MapPanel implements ILimitLineTableEventLi
 			renderMarker(g2d, originTileNoX, originTileNoY, lonlat, false);
 		}
 
-		for(LimitLineDatum datum : limitLineData) {
+		for(ILimitLineDatum datum : limitLineData) {
 			//非表示のlistはスキップする。
 			if(!datum.isVisible()) {
 				continue;

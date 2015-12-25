@@ -28,7 +28,8 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 
 import t.n.plainmap.AppConfig;
-import t.n.plainmap.dto.LimitLineDatum;
+import t.n.plainmap.dto.ILimitLineDatum;
+import t.n.plainmap.dto.LimitLineDatumJCLO;
 
 public class LimitLineTable extends JTable {
 	public static final String TEXT_EXT = ".txt";
@@ -137,7 +138,7 @@ public class LimitLineTable extends JTable {
 		}
 	}
 
-	public void setData(List<LimitLineDatum> readLimitLines) {
+	public void setData(List<ILimitLineDatum> readLimitLines) {
 		limitLineTableModel.setData(readLimitLines);
 	}
 

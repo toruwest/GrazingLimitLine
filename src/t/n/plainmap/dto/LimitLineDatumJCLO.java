@@ -13,7 +13,8 @@ import lombok.Setter;
 import t.n.map.common.LonLat;
 import t.n.map.common.util.LonLatUtil;
 
-public class LimitLineDatum {
+public class LimitLineDatumJCLO implements ILimitLineDatum {
+	private static final int HEADER_LINES_COUNT = 5;
 	//年月日。
 	@Getter
 	private String eventDate;
@@ -23,6 +24,12 @@ public class LimitLineDatum {
 	//接食の時刻。限界線の全範囲をスキャンして、イベントの始まりと終わりの時刻を表示する。
 	@Getter
 	private String eventTime;
+
+	//以下はeventTimeの元のデータとして使う
+	//最初の接食の時刻
+	private StringBuilder firstEventTime;
+	//最後の接食の時刻
+	private StringBuilder lastEventTime;
 
 	//恒星名
 	@Getter
@@ -50,7 +57,7 @@ public class LimitLineDatum {
 
 	//緯度・経度(複数)、結ぶと直線状になる
 	@Getter
-	private List<LonLat> lonlatList;
+	private final List<LonLat> lonlatList;
 
 	@Getter
 	private final Color color;
@@ -62,70 +69,57 @@ public class LimitLineDatum {
 	@Getter @Setter
 	private boolean isHilighted;
 
-	//最初の接食の時刻
-	private StringBuilder firstEventTime;
-	//最後の接食の時刻
-	private StringBuilder lastEventTime;
-
-	public LimitLineDatum(File limitLineFile, Color color) {
+	public LimitLineDatumJCLO(File limitLineFile, List<String> lines, Color color) {
 		this.filename = limitLineFile.getName();
 		this.isVisible = true;
 		this.isHilighted = false;
 		this.color = color;
 
-		List<String> lines;
-		try {
-			lines = Files.readAllLines(limitLineFile.toPath());
+		for(int i = 0; i < HEADER_LINES_COUNT; i++) {
+			String line = lines.get(i);
 
-			for(int i = 0; i < 5; i++) {
-				String line = lines.get(i);
+			if(i == 0) {
+				String[] line0 = parseLine0(line);
 
-				if(i == 0) {
-					String[] line0 = parseLine0(line);
-
-					StringBuilder sb = new StringBuilder();
-					sb.append(line0[1]);
-					sb.append(line0[2]);
-					sb.append(line0[3]);
-					eventDate = sb.toString();
-					eventName = line0[4];
-					starName = line0[5];
-					starMagnitude = line0[6];
-				} else if(i == 1) {
-					Scanner sc = new Scanner(line);
-					String ns = sc.next();
-					if("Northern".equals(ns)) {
-						northOrSouth = "北";
-					} else if("Southern".equals(ns)) {
-						northOrSouth = "南";
-					}
-					sc.next();//"limit"のはず
-					sc.next(); //"PB" 恒星が月のどの方向で接食となるか、なのか？潜入・出現のどちらか？
-					//角度だとすると、原点はどこ？値の範囲は？(0-360 or 0から±180) 右周り・左回り？単位は多分degree
-					PB = sc.next(); //"PB"の後の数値
-					//二行目に"k 0.358" (多分月の輝面比luminanceRatio)のような文字列があるので、これをパースする。
-					//"k"に続けて、空白なしで"-X.XXX"の形式の数字が入っていることがある。輝面比だとするとマイナスはおかしい？
-					String k0 = sc.next(); //"k"あるいは"k-N.NNN"
-
-					if(sc.hasNext()) {
-						//"k X.XXX"の"X.XXX"を取り出す
-						k = sc.next();
-					} else {
-						//先頭の"k"を取り除く
-						k = k0.substring(1, k0.length());
-					}
-
-					sc.close();
+				StringBuilder sb = new StringBuilder();
+				sb.append(line0[1]);
+				sb.append(line0[2]);
+				sb.append(line0[3]);
+				eventDate = sb.toString();
+				eventName = line0[4];
+				starName = line0[5];
+				starMagnitude = line0[6];
+			} else if(i == 1) {
+				Scanner sc = new Scanner(line);
+				String ns = sc.next();
+				if("Northern".equals(ns)) {
+					northOrSouth = "北";
+				} else if("Southern".equals(ns)) {
+					northOrSouth = "南";
 				}
+				sc.next();//"limit"のはず
+				sc.next(); //"PB" 恒星が月のどの方向で接食となるか、なのか？潜入・出現のどちらか？
+				//角度だとすると、原点はどこ？値の範囲は？(0-360 or 0から±180) 右周り・左回り？単位は多分degree
+				PB = sc.next(); //"PB"の後の数値
+				//二行目に"k 0.358" (多分月の輝面比luminanceRatio)のような文字列があるので、これをパースする。
+				//"k"に続けて、空白なしで"-X.XXX"の形式の数字が入っていることがある。輝面比だとするとマイナスはおかしい？
+				String k0 = sc.next(); //"k"あるいは"k-N.NNN"
+
+				if(sc.hasNext()) {
+					//"k X.XXX"の"X.XXX"を取り出す
+					k = sc.next();
+				} else {
+					//先頭の"k"を取り除く
+					k = k0.substring(1, k0.length());
+				}
+
+				sc.close();
 			}
-
-			//以下の容量は行数から分かるので、あらかじめ確保しておく。
-			lonlatList = new ArrayList<>(lines.size());
-			readLimitLine(lines);
-
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
+
+		//以下の容量は行数から分かるので、あらかじめ確保しておく。
+		lonlatList = new ArrayList<>(lines.size());
+		readLimitLine(lines);
 	}
 
 	private String[] parseLine0(String line) {
@@ -148,7 +142,7 @@ public class LimitLineDatum {
 	private void readLimitLine(List<String> lines) {
 		boolean isFirstEvent = true;
 
-		for(int i = 5; i < lines.size(); i++) {
+		for(int i = HEADER_LINES_COUNT; i < lines.size(); i++) {
 			String line = lines.get(i);
 			//テキストファイルの最後の数行は空白＋改行だけになっているので、取り除く。
 			if(line.trim().length() > 0) {
@@ -198,6 +192,7 @@ public class LimitLineDatum {
 		return lonLat;
 	}
 
+	@Override
 	public String getLabel() {
 		StringBuffer sb = new StringBuffer();
 		sb.append(eventDate);
@@ -213,6 +208,7 @@ public class LimitLineDatum {
 		return sb.toString();
 	}
 
+	@Override
 	public String getListData() {
 		StringBuffer sb = new StringBuffer();
 		sb.append(eventDate);
@@ -221,5 +217,53 @@ public class LimitLineDatum {
 
 		return sb.toString();
 	}
+
+//	public static int getHeaderLinesCount() {
+//		return HEADER_LINES_COUNT;
+//	}
+//	@Override
+//	public String getEventDate() {
+//		return eventDate;
+//	}
+//	@Override
+//	public String getEventName() {
+//		return eventName;
+//	}
+//	@Override
+//	public String getEventTime() {
+//		return eventTime;
+//	}
+//	@Override
+//	public String getStarName() {
+//		return starName;
+//	}
+//	@Override
+//	public String getStarMagnitude() {
+//		return starMagnitude;
+//	}
+//	@Override
+//	public String getK() {
+//		return k;
+//	}
+//	@Override
+//	public String getNorthOrSouth() {
+//		return northOrSouth;
+//	}
+//	@Override
+//	public String getPB() {
+//		return PB;
+//	}
+//	@Override
+//	public String getFilename() {
+//		return filename;
+//	}
+//	@Override
+//	public List<LonLat> getLonlatList() {
+//		return lonlatList;
+//	}
+//	@Override
+//	public Color getColor() {
+//		return color;
+//	}
 
 }

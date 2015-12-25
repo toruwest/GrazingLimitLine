@@ -16,7 +16,8 @@ import javax.swing.JTextField;
 import javax.swing.LayoutStyle;
 import javax.swing.WindowConstants;
 
-import t.n.plainmap.dto.LimitLineDatum;
+import t.n.plainmap.dto.ILimitLineDatum;
+import t.n.plainmap.dto.LimitLineDatumJCLO;
 import t.n.plainmap.view.IDialogStatusObserver;
 
 public class ObserveLocationDialog extends JDialog {
@@ -25,8 +26,8 @@ public class ObserveLocationDialog extends JDialog {
 			super();
 		}
 
-		public void setData(List<LimitLineDatum> limitLineData) {
-			for(LimitLineDatum l : limitLineData) {
+		public void setData(List<ILimitLineDatum> limitLineData) {
+			for(ILimitLineDatum l : limitLineData) {
 				addElement(l.getListData());
 			}
 		}
@@ -59,7 +60,7 @@ public class ObserveLocationDialog extends JDialog {
 		pack();
 	}
 
-	public void setLimitLineData(List<LimitLineDatum> limitLineData) {
+	public void setLimitLineData(List<ILimitLineDatum> limitLineData) {
 		model.setData(limitLineData);
 	}
 

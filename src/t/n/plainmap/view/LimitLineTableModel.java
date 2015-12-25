@@ -7,13 +7,14 @@ import java.util.List;
 import javax.swing.JButton;
 import javax.swing.table.AbstractTableModel;
 
-import t.n.plainmap.dto.LimitLineDatum;
+import t.n.plainmap.dto.ILimitLineDatum;
+import t.n.plainmap.dto.LimitLineDatumJCLO;
 
 public class LimitLineTableModel extends AbstractTableModel {
 	private final List<Boolean> bList;
 	private final List<Boolean> hilightButtonList;
 	private final ArrayList<JButton> moonEdgeDiagramButtonList;
-	private List<LimitLineDatum> limitLineData;
+	private List<ILimitLineDatum> limitLineData;
 	protected static final int BLIST_COL = 0;
 	protected static final int HILIGHT_COL = 1;
 	protected static final int SHOW_EDGE_COL = 2;
@@ -61,7 +62,7 @@ public class LimitLineTableModel extends AbstractTableModel {
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		LimitLineDatum row = limitLineData.get(rowIndex);
+		ILimitLineDatum row = limitLineData.get(rowIndex);
 
 		switch(columnIndex) {
 		case 0:
@@ -133,7 +134,7 @@ public class LimitLineTableModel extends AbstractTableModel {
 		return columnMaxWidth[columnIndex];
 	}
 
-	public void setData(List<LimitLineDatum> limitLineData) {
+	public void setData(List<ILimitLineDatum> limitLineData) {
 		this.limitLineData = limitLineData;
 		for(int i = 0; i < limitLineData.size(); i++) {
 			bList.add(true);
