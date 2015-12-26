@@ -10,7 +10,7 @@ import java.util.Set;
 import javax.imageio.ImageIO;
 
 import t.n.map.IFetchingStatusObserver;
-import t.n.map.ImageGetter;
+import t.n.map.http.ImageGetter;
 import t.n.map.common.LightWeightTile;
 import t.n.plainmap.util.TiledMapUtil2;
 

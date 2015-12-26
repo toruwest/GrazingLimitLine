@@ -1,4 +1,4 @@
-package t.n.mapdata.http;
+package t.n.map.http;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -19,14 +19,17 @@ import t.n.plainmap.MapPreference;
 import com.ning.http.client.AsyncCompletionHandler;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
+import com.ning.http.client.ListenableFuture;
 import com.ning.http.client.ProxyServer;
 import com.ning.http.client.Response;
 import com.ning.http.client.providers.jdk.JDKAsyncHttpProvider;
 
 public class HttpGetter implements IProxyConfigurationChangedListener {
 
+	protected static final int MAX_CONNECTIONS = 5;
 	private static final String HTTP_PROXY_PORT = "http.proxyPort";
 	private static final String HTTP_PROXY_HOST = "http.proxyHost";
+	private static final boolean DEBUG = false;
 	private final IFetchingStatusObserver observer;
 	private final ITiledImageReceiver imageReceiver;
 	protected File heightSavingDir;
@@ -38,12 +41,13 @@ public class HttpGetter implements IProxyConfigurationChangedListener {
 	private static AsyncHttpClientConfig config;
 
 	static {
-		httpClient = getAsyncHttpClient();//new AsyncHttpClientConfig.Builder().build());
+		httpClient = getAsyncHttpClient();
 	}
 
 	private static AsyncHttpClient getAsyncHttpClient() {
 		if (config == null) {
-			config = new AsyncHttpClientConfig.Builder().setAllowPoolingConnections(true).setMaxConnections(5).build();
+			config = new AsyncHttpClientConfig.Builder().setAllowPoolingConnections(true).setMaxConnections(MAX_CONNECTIONS).build();
+			//TODO ここでconfigに対しproxyの設定ができるかもしれない。
 		}
 		return new AsyncHttpClient(new JDKAsyncHttpProvider(config), config);
 	}
@@ -58,13 +62,6 @@ public class HttpGetter implements IProxyConfigurationChangedListener {
 		reconfigureProxy();
 	}
 
-//	public HttpGetter(IFetchingStatusObserver observer, File imageSavingDir, ITiledImageReceiver imageReceiver, String proxyHost, int proxyPort) {
-//		this.observer = observer;
-//		this.imageSavingDir = imageSavingDir;
-//		this.imageReceiver = imageReceiver;
-//		proxy = new ProxyServer(proxyHost, proxyPort);
-//	}
-
 	@Override
 	public void reconfigureProxy() {
 		if(pref.isUseProxy()) {
@@ -75,38 +72,40 @@ public class HttpGetter implements IProxyConfigurationChangedListener {
 			System.setProperty(HTTP_PROXY_PORT, String.valueOf(pref.getProxyPort()));
 		} else {
 //			proxy = null;
-			//unset
+			//proxyの設定を解除する。
 			//FIXME http://docs.oracle.com/javase/6/docs/technotes/guides/net/proxies.htmlに書いてある方法なのに、例外が投げられる。
 //			System.setProperty(HTTP_PROXY_HOST, null);
 //			System.setProperty(HTTP_PROXY_PORT, null);
 		}
 		//Systemプロパティを更新したあとは、以下を再実行して変更が適用された状態にする。
 		httpClient = HttpGetter.getAsyncHttpClient();
-		System.out.println("proxying :" + System.getProperty(HTTP_PROXY_HOST) + ":" + System.getProperty(HTTP_PROXY_PORT));
+		if(DEBUG) {
+			System.out.println("proxying :" + System.getProperty(HTTP_PROXY_HOST) + ":" + System.getProperty(HTTP_PROXY_PORT));
+		}
 	}
 
 	public void setImageSavingDir(File imageSavingDir) {
 		this.imageSavingDir = imageSavingDir;
 	}
 
-	protected void startFetching(final String uri, final File localFile, final LightWeightTile tile) {
-		System.out.println("EDT:" + SwingUtilities.isEventDispatchThread() + ": will fetch: " + uri);
+	public ListenableFuture<Integer> startFetching(final String uri, final File localFile, final LightWeightTile tile) {
+		if(DEBUG) {
+			System.out.println("EDT:" + SwingUtilities.isEventDispatchThread() + ": will fetch: " + uri);
+		}
 		if(observer != null) {
 			observer.notifyStartFetching(uri);
 		}
 		//以下はレスポンスを待たずに直ちにリターンしてくる。
-		final Future<Integer> future;
+		final ListenableFuture<Integer> future;
 		//FIXME 以下の方法では正常にプロキシが動作しないので、Systemプロパティを設定する方法を試している。これもまだ動いていない。
+		//https://github.com/AsyncHttpClient/async-http-client/blob/master/MIGRATION.mdを見つけた。関係あるか？
 //		if(proxy == null) {
 //			future = httpClient.prepareGet(uri).execute(new MyAsyncCompletionHandler(localFile, tile));
 //		} else {
 //			future = httpClient.prepareGet(uri).setProxyServer(proxy).execute(new MyAsyncCompletionHandler(localFile, tile));
 //		}
 		future = httpClient.prepareGet(uri).execute(new MyAsyncCompletionHandler(localFile, tile));
-		//FIXME "Too many connections 5"というメッセージが出ているが、レスポンスがあったらしばらく待ち、リクエストするようにできないか？
-		//
-//		future.
-//		config.get
+		return future;
 	}
 
 	public void shutdown() {
@@ -131,7 +130,9 @@ public class HttpGetter implements IProxyConfigurationChangedListener {
 			try {
 				// レスポンスヘッダーの取得
 				stat = response.getStatusCode();
-				System.out.println("onComplete(): " + response.getUri() + ": " + stat);
+				if(DEBUG) {
+					System.out.println("onComplete(): " + response.getUri() + ": " + stat);
+				}
 				if(stat == 200) {
 					// ファイルへの保存
 					InputStream is;

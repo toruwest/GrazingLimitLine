@@ -184,10 +184,11 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	 * http://astro-limovie.info/jclo/GrazingZoneViewer/index.html によると、相馬氏の提供するデータは、地人書館の天文観測年表(2009年を最後に休刊)に書かれているのが出典。
 	 * Occult4でも出せる？http://astro-limovie.info/jclo/occult/occult.html にある、Occult4のスクリーンショットには、"Short output"というチェックボックスがある。
 	 * Occult4は http://lunar-occultations.com/iota/occult4.htm から入手できる。2016年の接食の一覧を出力してみた。
-	 * TODO 2015年版も出して、接食限界線ルートWebで用意されているデータと比べて見る。
-	 * Occult4をもう一度開いて、接食限界線ルートデータの元となりそうなデータを出せる方法を探したけど、わかりませんでした。
-		“Lunar predictions”の”Predictions of multiple objects for multiple sites”だと思われる。
-
+	 * 2015年版も出して、接食限界線ルートWebで用意されているデータと比べたところ、同じようなテキストファイルが出力されていることがわかった。
+	 * TODO Windows版では、Occult4が決め打ちのフォルダーに各種ファイルを書き出している。限界線ルートデータは_predictionsに出されているので、
+	 * ファイルを移動したりする手間を省くため、デフォルトで、もしこのフォルダーが有れば読むようにする。(ユーザーが設定できるので、ダイアログで選択可能とする)
+     * TODO 現状では、限界線ルートデータのフォルダーにあるファイルを読み込むのは起動時だけだが、上記の対応に合わせて、設定した後で読み込むようにする。
+     *
 	 * http://www2.wbs.ne.jp/~spica/index.files/Page307.htmから各種ツール(Windows専用)がダウンロード可能となっている。これらのツールと接食限界線ルートWebの関係は
 	 * http://www2.wbs.ne.jp/~spica/Grazing/tools/RouteWebManual.pdf の30ページ以降に書かれている。 Excelが無いので試せない。
 	 * 接食限界線ルートWebで提供されているテキストファイルは、相馬氏ではなく、鈴木氏が作成したものと思われる。
@@ -691,12 +692,16 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	@Override
 	public void notifiGpsLocationInfo(LocationInfo locationInfo) {
 		if(locationInfo != null) {
-			LonLat currentLocation = new LonLat(locationInfo.getLonInDegMinSec(), locationInfo.getLatInDegMinSec());
+			final LonLat currentLocation = new LonLat(locationInfo.getLonInDegMinSec(), locationInfo.getLatInDegMinSec());
 			log(currentLocation.getLatitude() + ", " + currentLocation.getLongitude());
 			log("GPS :" + LonLatUtil.getLongitudeJapaneseString(currentLocation.getLongitude()) + ", " + LonLatUtil.getLatitudeJapaneseString(currentLocation.getLatitude()));
-			mapPanel.setCurrentGpsLocation(currentLocation);
-			gpsStatusLabel.setText("GPS:有効");
-		} else {
+			SwingUtilities.invokeLater(new Runnable() {
+				@Override
+				public void run() {
+					mapPanel.setCurrentGpsLocation(currentLocation);
+					gpsStatusLabel.setText("GPS:接続");
+				}
+			});
 			logger.log(Level.WARNING, "locationInfoがnullでした。");
 		}
 	}
@@ -1051,7 +1056,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
         jLabel5.setText("緯度");
         gpsLongitudejTextField = new JTextField();
         gpsLatitudeTextField = new JTextField();
-        gpsStatusLabel = new JLabel();
+        gpsStatusLabel = new JLabel("未接続");
         gpsLongitudejTextField.setEditable(false);
         gpsLatitudeTextField.setEditable(false);
 
@@ -1170,7 +1175,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 //			gpsLatitudeTextField.setText("");
 			gpsPortSelect.setForeground(Color.BLACK);
 		} else {
-			gpsStatusLabel.setText("GPS:無効");
+//			gpsStatusLabel.setText("GPS:未接続");
 			gpsStatusLabel.setForeground(Color.GRAY);
 			jLabel4.setForeground(Color.GRAY);
 			jLabel5.setForeground(Color.GRAY);
