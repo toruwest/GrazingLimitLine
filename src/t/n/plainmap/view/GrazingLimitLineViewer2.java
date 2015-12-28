@@ -17,6 +17,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -63,6 +64,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import t.n.gps.GpsEventListener;
@@ -70,6 +72,7 @@ import t.n.gps.GpsSerialDeviceHandler;
 import t.n.gps.GpsSerialDeviceUtil;
 import t.n.map.IFetchingStatusObserver;
 import t.n.map.LonLatFormat;
+import t.n.map.OsType;
 import t.n.map.common.KokudoTile;
 import t.n.map.common.LightWeightTile;
 import t.n.map.common.LocationInfo;
@@ -135,7 +138,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 
 	private GpsSerialDeviceHandler gpsHandler = null;
 	private boolean isGpsDeviceFound;
-	private final LimitLineReader limitLineReader;
+	private LimitLineReader limitLineReader;
 
 	private MapPreference pref;
 
@@ -162,6 +165,9 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	private MapParam mapParam;
 
 	private Color mapTypeChangeButtonDefaultColor;
+
+//	protected String occult4DataDir;
+
 	private static final Color mapTypeChangeButtonDisabledColor = Color.LIGHT_GRAY;
 
 	private static final boolean DEBUG = false;
@@ -186,7 +192,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	 * Occult4は http://lunar-occultations.com/iota/occult4.htm から入手できる。2016年の接食の一覧を出力してみた。
 	 * 2015年版も出して、接食限界線ルートWebで用意されているデータと比べたところ、同じようなテキストファイルが出力されていることがわかった。
 	 * TODO Windows版では、Occult4が決め打ちのフォルダーに各種ファイルを書き出している。限界線ルートデータは_predictionsに出されているので、
-	 * ファイルを移動したりする手間を省くため、デフォルトで、もしこのフォルダーが有れば読むようにする。(ユーザーが設定できるので、ダイアログで選択可能とする)
+	 * ファイルを移動したりする手間を省くため、デフォルトで、もしこのフォルダーが有れば読むようにする。(フォルダーの場所は、ユーザーが設定できるので、ダイアログで選択可能とする)
      * TODO 現状では、限界線ルートデータのフォルダーにあるファイルを読み込むのは起動時だけだが、上記の対応に合わせて、設定した後で読み込むようにする。
      *
 	 * http://www2.wbs.ne.jp/~spica/index.files/Page307.htmから各種ツール(Windows専用)がダウンロード可能となっている。これらのツールと接食限界線ルートWebの関係は
@@ -198,7 +204,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	 * このため、Googleマップが対応している緯度・経度のフォーマットでコピーする。フォーマットは、IRiot用と同じかもしれないし、違うかもしれない。違うなら別の操作にする。
 
 	 * TODO 2016年版の接食限界線のデータの入手。
-	 * TODO Occult4が出力したファイルを読み込めるようにする。Occult4が限界線を出せるのか不明？
+	 * DONE Occult4が出力したファイルを読み込めるようにする。Occult4が限界線を出せる
 	 * TODO IRiot(接食現象のレポート作成ソフト)へ経度緯度を転記するため、クリップボードへのコピー(IRiotの「"限界線ルート"より」が認識するフォーマットが不明なので誰かに聞く。鈴木寿さん?)
 	 * TODO 「限界線ルートデータ」(鈴木氏のWebアプリの名前) にある「標高補正」機能のアルゴリズムが不明。非対応で良い？
 	 * TODO 緯度経度から住所へ変換するWebサービスとして、http://developer.yahoo.co.jp/webapi/map/openlocalplatform/v1/reversegeocoder.htmlというのがある。API KEYの取得が必要。
@@ -217,7 +223,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	 * TODO アプリのアイコン。実行形式化。バージョン番号の付与ルール。
 	 * DONE アプリケーションディレクトリーを表示するダイアログを追加
 	 * DONE ESCボタンでダイアログを閉じる
-	 * TODO サーバーへのアクセスが集中するので、緩和(DelayQueueを使う、地図でズームレベルを変えるときにリクエストをキャンセルする)
+	 * DONE サーバーへのアクセスが集中するので、緩和(DelayQueueを使う、地図でズームレベルを変えるときにリクエストをキャンセルする)
 	 * FIXME Proxy経由での動作の確認(現状ではログに"null"とだけ表示される)
 	 * 以下の方法では設定が認識されるが、proxyサーバー上でアクセスが確認できない。
 	 *  java -Dhttp.proxyHost=localhost -Dhttp.proxyPort=8089 -jar xxxx.jar
@@ -283,8 +289,6 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 		}
 
 		if(isShowInitialDialog) {
-//			String message = "星食限界線のデータは、" + AppConfig.getGrazingLimitLineDataDir() + " に格納してください。";
-//			JOptionPane.showMessageDialog(frame, message);
 			new AppFolderShowDialog(null, true).setVisible(true);
 			//proxy設定画面を開く。
 			if(proxyConfigDialog == null) createProxyConfigDialog();
@@ -298,10 +302,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 
 		initComponents();
 
-		limitLineReader = new LimitLineReader(AppConfig.getGrazingLimitLineDataDir());
-        limitLineData = limitLineReader.readLimitLines();
-		mapPanel.setLimitLines(limitLineData);
-        limitLineTable.setData(limitLineData);
+		setLimitLineDir();
         limitLineTable.addTableEventListener(this);
         limitLineTable.addTableEventListener(mapPanel);
 
@@ -372,7 +373,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
             }
         });
 
-        configButton.addActionListener(new ActionListener() {
+        proxyConfigButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				//proxy設定画面を開く。
@@ -384,6 +385,38 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 				//prefのセッターが呼ばれたら、prefに設定したリスナー経由でHttpGetterのメソッドを呼ぶようにした
 			}
 		});
+
+        if(dataFolderConfigButton != null) {
+        	dataFolderConfigButton.addActionListener(new ActionListener() {
+        		@Override
+        		public void actionPerformed(ActionEvent e) {
+        			//prefから現在設定されているディレクトリを得る。
+        			String limitLineDataDir = pref.getLimitLineDataDir();
+        			if(limitLineDataDir == null) {
+        				limitLineDataDir = AppConfig.getDefaultOccult4DataDir();
+        			}
+        			//別の場所にある、Occult4の予測データが格納されたZIPファイルを選択。
+        			JFileChooser chooser = new JFileChooser(limitLineDataDir);
+        			chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        			FileNameExtensionFilter filter = new FileNameExtensionFilter("Occult4 grazing prediction result (ZIP file)", "zip");
+        			chooser.setFileFilter(filter);
+        			chooser.setMultiSelectionEnabled(false);
+
+        			int ans0 = chooser.showOpenDialog(frame);
+        			if(ans0 == JFileChooser.APPROVE_OPTION) {
+        				File newDir = chooser.getSelectedFile();
+        				if(newDir.exists()) {
+        					//ZIPファイルの置かれているフォルダーをデフォルトとする。
+        					pref.setOccult4Dir(newDir.getParent());
+        					//dataを読み取る。
+        					setLimitLineDir();
+        				} else {
+        					JOptionPane.showMessageDialog(frame, "フォルダーが見つかりません");
+        				}
+        			}
+        		}
+        	});
+        }
 
         aboutButton.addActionListener(new ActionListener() {
 			@Override
@@ -483,7 +516,6 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
             @Override
 			public void actionPerformed(java.awt.event.ActionEvent evt) {
             	observeLocationTable.removeSelectedEventDateLocation();
-            	//
             	observeLocationTable.saveFile(new File(appDataDir, OBSERVE_LOCATION_DATA_FILE));
             	boolean b = observeLocationTable.getRowCount() > 0;
             	copyObserveLocationsButton.setEnabled(b);
@@ -561,12 +593,6 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 				try {
 					pref.setInitialLocation(mapParam.getCenterLonLat());
 					pref.setDefaultImageSaveDir(imageSavingDir);
-//					pref.setUserHomeLocation(userHomeLocation);
-//					pref.setUserHomeZoomLevel(userHomeZoomLevel);
-//					pref.setIsUseProxy(isUseProxy);
-//					pref.setProxyHostname(proxyHost);
-//					pref.setProxyPort(proxyPort);
-//					pref.setIsShowOpeningMessage(isShowMessage);
 					pref.save();
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -577,6 +603,20 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 			}
 		});
     }
+
+	private void setLimitLineDir() {
+		//Occult4のデフォルトの予測データの格納先から読む
+		try {
+			String limitLineDataDir = pref.getLimitLineDataDir();
+			limitLineReader = new LimitLineReader(new File(limitLineDataDir));
+			limitLineData = limitLineReader.getLimitLineData();
+			mapPanel.setLimitLines(limitLineData);
+			limitLineTable.setData(limitLineData);
+			frame.repaint();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	protected void createProxyConfigDialog() {
 		proxyConfigDialog = new ProxyConfigDialog(frame, pref);
@@ -830,13 +870,23 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 
         jToolBar.addSeparator();
 
-        configButton = new JButton();
-        configButton.setText("設定");
-        configButton.setToolTipText("このアプリの設定を行います");
-        configButton.setFocusable(false);
-        configButton.setHorizontalTextPosition(SwingConstants.CENTER);
-        configButton.setVerticalTextPosition(SwingConstants.BOTTOM);
-        jToolBar.add(configButton);
+        proxyConfigButton = new JButton();
+        proxyConfigButton.setText("Proxy...");
+        proxyConfigButton.setToolTipText("Proxyの設定を行います");
+        proxyConfigButton.setFocusable(false);
+        proxyConfigButton.setHorizontalTextPosition(SwingConstants.CENTER);
+        proxyConfigButton.setVerticalTextPosition(SwingConstants.BOTTOM);
+        jToolBar.add(proxyConfigButton);
+
+        if(AppConfig.getOsType() == OsType.win) {
+        	dataFolderConfigButton = new JButton();
+        	dataFolderConfigButton.setText("data..");
+        	dataFolderConfigButton.setToolTipText("Occult4の限界線ルートデータを格納しているフォルダーの設定を行います");
+        	dataFolderConfigButton.setFocusable(false);
+        	dataFolderConfigButton.setHorizontalTextPosition(SwingConstants.CENTER);
+        	dataFolderConfigButton.setVerticalTextPosition(SwingConstants.BOTTOM);
+        	jToolBar.add(dataFolderConfigButton);
+        }
 
         aboutButton = new JButton();
         aboutButton.setText("About...");
@@ -846,7 +896,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
         jToolBar.add(aboutButton);
 
         buttonPanel = new JPanel();
-        lonlatFormatButton = new JButton("緯度経度書式");
+        lonlatFormatButton = new JButton("書式");
         //formatButton.setEnabled(false);
         lonlatFormatButton.setToolTipText("緯度・経度の表示形式を度分秒あるいは実数表記(度と小数点)に切り替えます。");
 
@@ -1007,6 +1057,9 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
         latitudeText.setEditable(false);
         latitudeText.setText(""); // NOI18N
         latitudeText.setName("Lat"); // NOI18N
+        altitudeLabel = new JLabel("標高");
+        altitudeTextField = new javax.swing.JTextField();
+        altitudeTextField.setEditable(false);
 
         GroupLayout buttonPanelLayout = new GroupLayout(buttonPanel);
         buttonPanel.setLayout(buttonPanelLayout);
@@ -1018,13 +1071,17 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
                     .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                     .addComponent(longitudeLabel)
                     .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                    .addComponent(longitudeText, GroupLayout.PREFERRED_SIZE, 140, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(longitudeText, GroupLayout.PREFERRED_SIZE, 103, GroupLayout.PREFERRED_SIZE)
                     .addGap(18, 18, 18)
                     .addComponent(latitudeLabel)
                     .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                    .addComponent(latitudeText, GroupLayout.PREFERRED_SIZE, 140, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(latitudeText, GroupLayout.PREFERRED_SIZE, 101, GroupLayout.PREFERRED_SIZE)
                     .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                    .addComponent(zoomLevelLabel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(altitudeLabel)
+                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                    .addComponent(altitudeTextField, GroupLayout.PREFERRED_SIZE, 80, GroupLayout.PREFERRED_SIZE)
+                    .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                    .addComponent(zoomLevelLabel)
                     .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                     .addComponent(zoomLevelSlider, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addContainerGap())
@@ -1033,16 +1090,17 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
                 buttonPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
                 .addGroup(buttonPanelLayout.createSequentialGroup()
                     .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(zoomLevelSlider, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-                .addGroup(GroupLayout.Alignment.TRAILING, buttonPanelLayout.createSequentialGroup()
-                    .addGap(0, 0, Short.MAX_VALUE)
-                    .addGroup(buttonPanelLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                        .addComponent(lonlatFormatButton)
-                        .addComponent(longitudeLabel)
-                        .addComponent(longitudeText, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                        .addComponent(latitudeLabel)
-                        .addComponent(latitudeText, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                        .addComponent(zoomLevelLabel)))
+                    .addGroup(buttonPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                        .addGroup(GroupLayout.Alignment.TRAILING, buttonPanelLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                            .addComponent(lonlatFormatButton)
+                            .addComponent(longitudeLabel)
+                            .addComponent(longitudeText, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+                            .addComponent(latitudeLabel)
+                            .addComponent(latitudeText, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+                            .addComponent(zoomLevelLabel)
+                            .addComponent(altitudeLabel)
+                            .addComponent(altitudeTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+                        .addComponent(zoomLevelSlider, GroupLayout.Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
             );
 
         gpsPanel = new JPanel();
@@ -1171,11 +1229,8 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 			gpsStatusLabel.setForeground(Color.BLACK);
 			jLabel4.setForeground(Color.BLACK);
 			jLabel5.setForeground(Color.BLACK);
-//			gpsLongitudejTextField.setText("");
-//			gpsLatitudeTextField.setText("");
 			gpsPortSelect.setForeground(Color.BLACK);
 		} else {
-//			gpsStatusLabel.setText("GPS:未接続");
 			gpsStatusLabel.setForeground(Color.GRAY);
 			jLabel4.setForeground(Color.GRAY);
 			jLabel5.setForeground(Color.GRAY);
@@ -1252,8 +1307,10 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
     private JButton mapTypeChangeButton;
 	private JLabel limitLineLabel;
 
-	private JButton configButton;
-	private JButton aboutButton;
+//	private JButton configButton;
+    private javax.swing.JButton proxyConfigButton;
+    private javax.swing.JButton dataFolderConfigButton;
+    private JButton aboutButton;
 
     private JLabel locLabel;
     private JLabel longitudeLabel;
@@ -1288,5 +1345,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	private JScrollPane jScrollPane2;
 	private JScrollPane jScrollPane1;
 	private JCheckBox showAllLinesCheckBox;
+    private javax.swing.JLabel altitudeLabel;
+    private javax.swing.JTextField altitudeTextField;
     // End of variables declaration
 }

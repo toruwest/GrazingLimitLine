@@ -16,8 +16,10 @@ import lombok.Getter;
 import lombok.Setter;
 import t.n.map.common.LonLat;
 import t.n.map.common.util.LonLatUtil;
+import t.n.plainmap.util.OccultEventDateTimeUtil;
 
 public class LimitLineDatumOccult4 implements ILimitLineDatum {
+	private static final String ILLUMINATION_OF_MOON = "Illumination of moon";
 	private static final int HEADER_LINES_COUNT = 8;
 	protected static final Pattern EVENT_PERIOD_PATTERN = Pattern.compile("Date: ([\\s|\\S]+),  to  ([\\s|\\S]+)");
 
@@ -65,6 +67,10 @@ public class LimitLineDatumOccult4 implements ILimitLineDatum {
 	@Getter
 	private final String filename;
 
+	//月縁図
+	@Getter
+	private final String imageFileAbsPath;
+
 	//緯度・経度(複数)、結ぶと直線状になる
 	@Getter
 	private final List<LonLat> lonlatList;
@@ -79,8 +85,10 @@ public class LimitLineDatumOccult4 implements ILimitLineDatum {
 	@Getter @Setter
 	private boolean isHilighted;
 
-	public LimitLineDatumOccult4(File limitLineFile, List<String> lines, Color color) {
-		this.filename = limitLineFile.getName();
+	public LimitLineDatumOccult4(String limitLineFile, String absPath, List<String> lines, Color color) {
+		this.filename = limitLineFile;
+		// ZIPファイルの中にあるイメージを、appDirの下に展開しておいて、それを使う。
+		this.imageFileAbsPath = absPath;
 		this.isVisible = true;
 		this.isHilighted = false;
 		this.color = color;
@@ -91,6 +99,7 @@ public class LimitLineDatumOccult4 implements ILimitLineDatum {
 			switch(i) {
 			case 0:
 				String[] line0 = parseLine0(line);
+				eventName = line0[0];
 				starName = line0[0];
 				starMagnitude = line0[1];
 				break;
@@ -133,7 +142,7 @@ public class LimitLineDatumOccult4 implements ILimitLineDatum {
 
 		//以下の容量は行数から分かるので、あらかじめ確保しておく。
 		lonlatList = new ArrayList<>(lines.size());
-		readLimitLine(lines);
+		readLimitLines(lines);
 		eventDate = OccultEventDateTimeUtil.formatDate(firstEventTime);
 		eventTime = OccultEventDateTimeUtil.formatTime(firstEventTime, lastEventTime);
 	}
@@ -147,12 +156,8 @@ public class LimitLineDatumOccult4 implements ILimitLineDatum {
 		tmp[0] = line.substring(0, 7);
 		tmp[1] = line.substring(8, 19);
 		tmp[2] = line.substring(20, 22);
-//		result[3] = line.substring(10, 12);
 		result[0] = line.substring(23, 38).trim();
-		//現象名が"X"だけの場合はそのまま。"X"の前に何かある場合は"X"を除く。
-//		if(result[4].length() > 1 && result[4].endsWith("X")) {
-		tmp[3] = line.substring(38, 48);//result[4].length() - 1).trim();
-//		}
+		tmp[3] = line.substring(38, 48);
 		result[1] = line.substring(49, 52).trim();
 		result[2] = line.substring(60, 63);
 
@@ -164,17 +169,15 @@ public class LimitLineDatumOccult4 implements ILimitLineDatum {
 		return result;
 	}
 
-	private void readLimitLine(List<String> lines) {
-//		boolean isFirstEvent = true;
-
-		for(int i = HEADER_LINES_COUNT; i < lines.size(); i++) {
+	private void readLimitLines(List<String> lines) {
+		int i = 0;
+		for(i = HEADER_LINES_COUNT; i < lines.size(); i++) {
 			String line = lines.get(i).trim();
 			//テキストファイルの最後の数行は空白＋改行だけになっているので、取り除く。
 			if(line.length() > 0) {
 				String[] split = line.split("\\s+");
 				LonLat lonlat = parseLonLat(split);
 				//TODO フォーマット異常の場合の対処
-				//lonlat.isInvalid();
 				lonlatList.add(lonlat);
 			} else {
 				//限界線データの終わりは空白行になっていて、この後に別のテキストが続いている。
@@ -182,20 +185,14 @@ public class LimitLineDatumOccult4 implements ILimitLineDatum {
 				break;
 			}
 		}
-//		eventTime = firstEventTime.append("-").append(lastEventTime).toString();
-//		event
+		//TODO "Illumination of moon"という行があるので、輝面比として使う。
+		for(int j = i; j < lines.size(); j++) {
+			String line = lines.get(j).trim();
+			if(line.startsWith(ILLUMINATION_OF_MOON)) {
+				k = parseIlluminateRatio(line);
+			}
+		}
 	}
-
-//	private StringBuilder parseEventTime(String[] split) {
-//		StringBuilder sb = new StringBuilder();
-//		sb.append(split[7]);
-//		sb.append(":");
-//		sb.append(split[8]);
-//		sb.append(":");
-//		sb.append(split[9]);
-//
-//		return sb;
-//	}
 
 	/**
 	 * 注意：２０１５年の接食限界線のテキストファイルに、緯度が60以上となっているデータがあった。
@@ -239,4 +236,18 @@ public class LimitLineDatumOccult4 implements ILimitLineDatum {
 		return sb.toString();
 	}
 
+//	public static void main(String[] args) {
+//		String illuminateRatio = parseIlluminateRatio("      Illumination of moon  26%+");
+//		System.out.println(illuminateRatio);
+//	}
+
+	private static final Pattern ILLUMINATE_PARSE_PATTERN = Pattern.compile("Illumination of moon  (\\d+)%+");
+
+	private static String parseIlluminateRatio(String string) {
+		Matcher m = ILLUMINATE_PARSE_PATTERN.matcher(string);
+		if(m.find()) {
+			return m.group(1);
+		}
+		return null;
+	}
 }

@@ -149,7 +149,7 @@ public class TiledMapUtil2 {
 			case 11:
 			case 12:
 				/*
-				 * TODO 5-12を使う場合の注意事項(	http://maps.gsi.go.jp/development/ichiran.htmlに記載あり)
+				 * level 5-12を使う場合の注意事項(	http://maps.gsi.go.jp/development/ichiran.htmlに記載あり)
 				 * 本タイル画像を利用する場合は、 「地理院コンテンツ利用規約」で定める方法での出所明示に加え、 以下の出所も合わせて明示してください。
 				 * 「データソース：Landsat8画像(GSI,TSIC,GEO Grid/AIST), 海底地形(GEBCO)」
 				 */

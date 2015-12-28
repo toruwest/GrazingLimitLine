@@ -55,6 +55,10 @@ public class LimitLineDatumJCLO implements ILimitLineDatum {
 	@Getter
 	private final String filename;
 
+	//月縁図
+	@Getter
+	private final String imageFileAbsPath;
+
 	//緯度・経度(複数)、結ぶと直線状になる
 	@Getter
 	private final List<LonLat> lonlatList;
@@ -69,8 +73,12 @@ public class LimitLineDatumJCLO implements ILimitLineDatum {
 	@Getter @Setter
 	private boolean isHilighted;
 
-	public LimitLineDatumJCLO(File limitLineFile, List<String> lines, Color color) {
-		this.filename = limitLineFile.getName();
+//	public LimitLineDatumJCLO(File limitLineFile, List<String> lines, Color color) {
+	public LimitLineDatumJCLO(String limitLineFilename, String imageAbsPath, List<String> lines, Color color) {
+//		this.filename = limitLineFile.getName();
+		this.filename = limitLineFilename;
+//		this.imageFileAbsPath = limitLineFile.getAbsolutePath().replace(TEXT_EXT, IMAGE_EXT);
+		this.imageFileAbsPath = imageAbsPath;//.replace(TEXT_EXT, IMAGE_EXT);
 		this.isVisible = true;
 		this.isHilighted = false;
 		this.color = color;
@@ -217,53 +225,4 @@ public class LimitLineDatumJCLO implements ILimitLineDatum {
 
 		return sb.toString();
 	}
-
-//	public static int getHeaderLinesCount() {
-//		return HEADER_LINES_COUNT;
-//	}
-//	@Override
-//	public String getEventDate() {
-//		return eventDate;
-//	}
-//	@Override
-//	public String getEventName() {
-//		return eventName;
-//	}
-//	@Override
-//	public String getEventTime() {
-//		return eventTime;
-//	}
-//	@Override
-//	public String getStarName() {
-//		return starName;
-//	}
-//	@Override
-//	public String getStarMagnitude() {
-//		return starMagnitude;
-//	}
-//	@Override
-//	public String getK() {
-//		return k;
-//	}
-//	@Override
-//	public String getNorthOrSouth() {
-//		return northOrSouth;
-//	}
-//	@Override
-//	public String getPB() {
-//		return PB;
-//	}
-//	@Override
-//	public String getFilename() {
-//		return filename;
-//	}
-//	@Override
-//	public List<LonLat> getLonlatList() {
-//		return lonlatList;
-//	}
-//	@Override
-//	public Color getColor() {
-//		return color;
-//	}
-
 }

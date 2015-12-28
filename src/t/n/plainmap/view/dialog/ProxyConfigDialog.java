@@ -52,7 +52,7 @@ public class ProxyConfigDialog extends javax.swing.JDialog {
         useRadioButton.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent e) {
-				// TODO proxy使用時だけpingボタンを有効にする。
+				// proxy使用時だけpingボタンを有効にする。
 				pingButton.setEnabled(useRadioButton.isSelected());
 			}
 		});
@@ -83,16 +83,20 @@ public class ProxyConfigDialog extends javax.swing.JDialog {
             @Override
 			public void actionPerformed(ActionEvent evt) {
             	String proxyHostText = proxyHostTextField.getText();
+            	Long proxyPort = null;
             	try {
 					proxyPortTextField.commitEdit();
+					proxyPort = (Long)proxyPortTextField.getValue();
 				} catch (Exception e) {
-					e.printStackTrace();
+//					e.printStackTrace();
 				}
+//            	if(proxyPort == null) {
+//            		msgLabel.setText("ホスト名とポート番号を入力してください。");
+//            	}
             	// proxyPortText = proxyPortTextField.getText();
-            	Long proxyPort = (Long)proxyPortTextField.getValue();
             	if(useRadioButton.isSelected()) {
 //            		if(!proxyHostText.isEmpty() && !proxyPortText.isEmpty() ) {
-            		if(!proxyHostText.isEmpty()) {
+            		if(!proxyHostText.isEmpty() && proxyPort != null) {
             			pref.setProxyHostname(proxyHostText);
 //            			long proxyPort = Integer.parseInt(proxyPortText);
             			pref.setProxyPort(proxyPort);

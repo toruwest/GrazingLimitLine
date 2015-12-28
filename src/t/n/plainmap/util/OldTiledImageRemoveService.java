@@ -20,7 +20,7 @@ public class OldTiledImageRemoveService {
 	}
 
 	public static void start() {
-		// TODO Auto-generated method stub
+		// Auto-generated method stub
 	}
 }
 

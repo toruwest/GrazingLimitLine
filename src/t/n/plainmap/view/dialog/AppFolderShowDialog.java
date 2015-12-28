@@ -47,7 +47,10 @@ public class AppFolderShowDialog extends javax.swing.JDialog {
             }
         });
 
-        jLabel1.setText("星食限界線のデータは、以下のフォルダーに格納してください。");
+        //TODO Windowsの場合はOccult4のデフォルトの予測データの格納先フォルダーを自動認識
+        jLabel1.setText("<html>星食限界線のデータは、以下のフォルダーに格納してください。<br>" +
+        		"ただし、Windows上で使っていて、Occult4の接食現象の予測機能で生成されたファイルが " + AppConfig.getDefaultOccult4DataDir() + "<br>" +
+        		"にある場合、自動認識しますので、ファイルの移動・コピーなどは不要です。他のフォルダーにある場合でも、設定で変更できます。</html>");
 
         textField.setText(AppConfig.getGrazingLimitLineDataDir().getAbsolutePath());
         textField.setEnabled(false);
@@ -78,14 +81,14 @@ public class AppFolderShowDialog extends javax.swing.JDialog {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(textField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(copyButton)
                     .addComponent(closeButton))
-                .addContainerGap(15, Short.MAX_VALUE))
+                .addContainerGap(25, Short.MAX_VALUE))
         );
 
         pack();

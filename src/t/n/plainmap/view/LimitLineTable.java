@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractCellEditor;
@@ -29,11 +30,8 @@ import javax.swing.table.TableColumn;
 
 import t.n.plainmap.AppConfig;
 import t.n.plainmap.dto.ILimitLineDatum;
-import t.n.plainmap.dto.LimitLineDatumJCLO;
 
 public class LimitLineTable extends JTable {
-	public static final String TEXT_EXT = ".txt";
-	public static final String IMAGE_EXT = ".png";
 
 	private final LimitLineTableModel limitLineTableModel;
 	private final TableButtonCellRenderer buttonCellRenderer = new TableButtonCellRenderer();
@@ -42,6 +40,7 @@ public class LimitLineTable extends JTable {
 	private final List<ILimitLineTableEventListener> tableEventListeners;
 	//ダイアログの親コンポーネントとして使う
 	private final LimitLineTable thisTable;
+	private Map<String, String> text2imageMap;
 
 	public LimitLineTable() {
 		super();
@@ -62,13 +61,11 @@ public class LimitLineTable extends JTable {
 				Object comp = getValueAt(row, col);
 				if(comp instanceof JButton) {
 					JButton btn = ((JButton)comp);
-					System.out.println("cell clicked :" + btn.getName() + ":" + row + ":" + btn.getActionCommand());
+					//System.out.println("cell clicked :" + btn.getName() + ":" + row + ":" + btn.getActionCommand());
 					//ボタンクリック時の処理
 					if(btn.getName().equals("show")) {
-						//月縁図のイメージを表示
-						String filename = limitLineTableModel.getFilename(row);
-						filename = filename.replace(TEXT_EXT, IMAGE_EXT);
-						filename = AppConfig.getGrazingLimitLineDataDir() + File.separator + filename;
+						//月縁図のイメージを表示。
+						String filename = limitLineTableModel.getImageFileAbsPath(row);
 						File f = new File(filename);
 
 						//pngファイルがない場合、テーブル上のボタンを無効化してある。
@@ -118,7 +115,6 @@ public class LimitLineTable extends JTable {
 			}
 			if(i == SHOW_EDGE_COL ) {
 				column.setCellRenderer(buttonCellRenderer);
-//				column.setCellEditor(buttonCellEditor);
 			}
 			if(i == EVENT_NAME_COL) {
 				column.setCellRenderer(eventLineCellRenderer);
@@ -208,13 +204,11 @@ public class LimitLineTable extends JTable {
 	            rowHeight = dimension.height;
 	        }
 
-			String filename = limitLineTableModel.getFilename(row);
-			filename = filename.replace(".txt", ".png");
-			filename = AppConfig.getGrazingLimitLineDataDir() + File.separator + filename;
-			File f = new File(filename);
+	        //Occult4のデフォルトの予測データの格納先から読む。
+			String imageFilename = limitLineTableModel.getImageFileAbsPath(row);
+			File f = new File(imageFilename);
 
 			if(!f.exists() && column == SHOW_EDGE_COL) {
-				//component.setVisible(false);
 				component.setText("ない");
 			}
 

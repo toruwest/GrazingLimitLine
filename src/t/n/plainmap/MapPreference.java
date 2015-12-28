@@ -19,6 +19,7 @@ public class MapPreference {
 	private static final String USER_HOME_LOCATION_LON = "USER_HOME_LOCATION_LON";
 	private static final String USER_HOME_LOCATION_LAT = "USER_HOME_LOCATION_LAT";
 	private static final String USER_HOME_ZOOM_LEVEL = "USER_HOME_ZOOM_LEVEL";
+	private static final String LIMIT_LINE_DATA_DIR = "LIMIT_LINE_DATA_DIR";
 	private static final String USE_PROXY= "USE_PROXY";
 	private static final String PROXY_HOST = "PROXY_HOST";
 	private static final String PROXY_PORT = "PROXY_PORT";
@@ -48,11 +49,14 @@ public class MapPreference {
 	private long proxyPort;
 	@Getter
 	private boolean isHideOpeningMessage;
+	@Getter
+	private String limitLineDataDir;
 
 	public MapPreference(File dataDir){
 		this.dataDir = dataDir;
 		this.prefFilename = DEFAULT_PREF_FILENAME;
 		listeners = new ArrayList<>();
+		limitLineDataDir = AppConfig.getGrazingLimitLineDataDir().getAbsolutePath();
 	}
 
 	//	//JUnit によるテスト用。
@@ -106,8 +110,11 @@ public class MapPreference {
 					proxyPort = Integer.parseInt(proxyPortStr);
 				}
 				isHideOpeningMessage = Boolean.parseBoolean((String)prop.get(HIDE_OPENING_MSG));
-
+				limitLineDataDir = (String)prop.get(LIMIT_LINE_DATA_DIR);
+				if(limitLineDataDir == null) limitLineDataDir = AppConfig.getGrazingLimitLineDataDir().getAbsolutePath();
 				reader.close();
+//			} else {
+//				limitLineDataDir = AppConfig.getGrazingLimitLineDataDir().getAbsolutePath();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -173,6 +180,11 @@ public class MapPreference {
 
 	public void addProxyConfigurationChangedListener(IProxyConfigurationChangedListener listener) {
 		listeners.add(listener);
+	}
+
+	public void setOccult4Dir(String dir) {
+		this.limitLineDataDir = dir;
+		prop.setProperty(LIMIT_LINE_DATA_DIR, String.valueOf(dir));
 	}
 
 	private void fireIProxyConfigurationChangedEvent() {

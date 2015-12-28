@@ -1,7 +1,6 @@
 package t.n.plainmap.dto;
 
 import static org.junit.Assert.*;
-import static t.n.plainmap.view.LimitLineTable.TEXT_EXT;
 
 import java.awt.Color;
 import java.io.File;
@@ -18,8 +17,10 @@ import java.util.regex.Matcher;
 
 import org.junit.Test;
 
+import t.n.plainmap.LimitLineReader;
 import t.n.plainmap.dto.LimitLineDatumOccult4;
 import t.n.plainmap.util.LimitLineColorUtil;
+import t.n.plainmap.util.OccultEventDateTimeUtil;
 
 public class LimitLineDatumOccult4Test {
 
@@ -34,10 +35,10 @@ public class LimitLineDatumOccult4Test {
 		if(dataDir .exists() && dataDir.isDirectory()) {
 			int colorIndex = 0;
 			for(File f : dataDir.listFiles()) {
-				if(f.getName().endsWith(TEXT_EXT)) {
+				if(f.getName().endsWith(ILimitLineDatum.TEXT_EXT)) {
 					Color c = LimitLineColorUtil.getLineColor(colorIndex++);
 					List<String> lines = Files.readAllLines(f.toPath());
-					data.add(new LimitLineDatumOccult4(f, lines, c));
+					data.add(new LimitLineDatumOccult4(f.getName(), f.getAbsolutePath(), lines, c));
 				}
 			}
 		}

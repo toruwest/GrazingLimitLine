@@ -152,8 +152,13 @@ public class LimitLineTableModel extends AbstractTableModel {
 		return limitLineData.get(row).getColor();
 	}
 
+	//TODO 呼ばれていない？
 	public String getFilename(int row) {
 		return limitLineData.get(row).getFilename();
+	}
+
+	public String getImageFileAbsPath(int row) {
+		return limitLineData.get(row).getImageFileAbsPath();
 	}
 
 }

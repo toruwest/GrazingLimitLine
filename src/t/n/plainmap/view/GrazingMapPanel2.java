@@ -5,19 +5,22 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.Stroke;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import t.n.map.common.LonLat;
 import t.n.map.common.util.TileImageManagerUtil;
-import t.n.plainmap.EventDescrition;
+import t.n.plainmap.EventDescription;
 import t.n.plainmap.ITileImageManager;
 import t.n.plainmap.MapParam;
 import t.n.plainmap.MouseMovementObserver;
 import t.n.plainmap.dto.ILimitLineDatum;
-import t.n.plainmap.dto.LimitLineDatumJCLO;
 
 public class GrazingMapPanel2 extends MapPanel implements ILimitLineTableEventListener {
 	private static final int MARKER_RAD = 10;
@@ -79,7 +82,6 @@ public class GrazingMapPanel2 extends MapPanel implements ILimitLineTableEventLi
 			return;
 		}
 		Graphics2D g2d = (Graphics2D)g;
-		Point screenCoord;
 		int originTileNoX = tileImageManager.getOriginTileNoX();
 		int originTileNoY = tileImageManager.getOriginTileNoY();
 
@@ -88,6 +90,8 @@ public class GrazingMapPanel2 extends MapPanel implements ILimitLineTableEventLi
 		for(LonLat lonlat : observerLocationList) {
 			renderMarker(g2d, originTileNoX, originTileNoY, lonlat, false);
 		}
+
+		List<EventDescription> descList = new ArrayList<>();
 
 		for(ILimitLineDatum datum : limitLineData) {
 			//非表示のlistはスキップする。
@@ -105,46 +109,92 @@ public class GrazingMapPanel2 extends MapPanel implements ILimitLineTableEventLi
 			//線色を設定
 			g2d.setColor(datum.getColor());
 
+			AffineTransform saveXform = g2d.getTransform();
+			g2d.translate(moveX, moveY);
+
 			boolean first = true;
-			EventDescrition desc = null;
-			//概ね経度が小さい順に格納されている。日本だと、説明文の位置を、経度が大きい(日付変更線に近い)点の近くにした方が、
-			//地図と重ならずに表示され、見やすいことが多い。なので、大きい方から始める。
+			EventDescription desc = null;
+			//限界線データは、JCLOのも、Occult4のも、概ね経度が小さい順に格納されている。日本だと、説明文の位置を、経度が大きい(日付変更線に近い)点の近くにした方が、
+			//海上に表示され、地図と重ならず、見やすいことが多いので、大きい方から始める。
+			//以下は緯度・経度ともにソートされていない。descを重ならないよう描画するために、緯度(y座標)でソートしておく。
 			List<LonLat> l = datum.getLonlatList();
 			for(int i = l.size() - 1; i >= 0; i--) {
 				LonLat lonlat = l.get(i);
-				screenCoord = TileImageManagerUtil.getScreenCoordFromLonlat(lonlat, originTileNoX, originTileNoY, originX, originY, mapParam.getZoomLevel());
+				Point screenCoord = TileImageManagerUtil.getScreenCoordFromLonlat(lonlat, originTileNoX, originTileNoY, originX, originY, mapParam.getZoomLevel());
+
 				if(first) {
-					path.moveTo(screenCoord.x + moveX, screenCoord.y + moveY);
+					path.moveTo(screenCoord.x, screenCoord.y);
+					//他のdescの矩形と重ならないよう、位置を調整する。
 					//星食現象の説明を初期化
-					//FIXME 説明が重なることがあるので、対策。
-					desc = new EventDescrition(screenCoord, moveX, moveY, datum);
+					desc = new EventDescription(screenCoord, datum);
+					//後でy座標順にソート
+					descList.add(desc);
+
 					first = false;
 				} else {
-					path.lineTo(screenCoord.x + moveX, screenCoord.y + moveY);
+					path.lineTo(screenCoord.x, screenCoord.y);
 				}
 			}
 			//限界線の描画
 			g2d.draw(path);
-			//説明の描画
+
+			g2d.setTransform(saveXform);
+		}
+
+		//descの矩形どうしが重ならないよう、位置を調整する。
+//		dump(g2d, descList);
+		adjust(g2d, descList);
+//		System.out.println("after");
+//		dump(g2d, descList);
+
+		//説明の描画
+		for(EventDescription desc : descList) {
+			AffineTransform saveXform = g2d.getTransform();
+			g2d.translate(moveX, moveY);
 			desc.draw(g2d);
+			g2d.setTransform(saveXform);
+		}
+	}
+
+	private void adjust(Graphics2D g2d, List<EventDescription> descList) {
+		//y座標により、昇順でソートする。
+		Collections.sort(descList);
+		//dump(g2d, descList);
+		//矩形をだんだん大きくしていく。初期の大きさは、先頭のdescの大きさ。
+		//後から出現するdescの位置が、この矩形と重なっていれば、descの位置をずらす。
+		//この後、矩形の大きさを、ずらした後のdescの下の辺まで大きくする。
+		Rectangle rect = null;
+		for(EventDescription desc : descList) {
+			Rectangle descRect = desc.getRect(g2d);
+			if(rect != null && rect.intersects(descRect)) {
+				int newY = rect.y + rect.height + descRect.height/2;
+				desc.move(descRect.x, newY);
+				descRect.y = newY;
+				rect = rect.union(descRect);
+			} else {
+				rect = descRect;
+				desc.move(descRect.x, descRect.y);
+			}
+		}
+	}
+
+	private void dump(Graphics2D g2d, List<EventDescription> descList) {
+		for(EventDescription desc : descList) {
+			System.out.println(desc.getRect(g2d));
 		}
 	}
 
 	private void renderMarker(Graphics2D g2d, int originTileNoX, int originTileNoY, LonLat lonlat, boolean isGps) {
 		Point screenCoord;
 		if(lonlat != null && lonlat.getLongitude() != Float.NaN) {
-//			screenCoord = TileImageManagerUtil.getScreenCoordFromLonTat(lonlat, originTileNoX, originTileNoY, moveX + originX, moveY + originY, mapParam.getZoomLevel());
 			screenCoord = TileImageManagerUtil.getScreenCoordFromLonlat(lonlat, originTileNoX, originTileNoY, originX, originY, mapParam.getZoomLevel());
 			g2d.setStroke(HILIGHTED_STROKE);
 			g2d.setColor(Color.RED);
 			if(isGps) {
 				//GPSデバイスから受信した緯度経度によるマーカーを丸印で表示。
-//				g2d.drawArc(screenCoord.x - MARKER_RAD, screenCoord.y - MARKER_RAD, MARKER_DIAM, MARKER_DIAM, 0, 360);
 				g2d.drawArc(moveX + screenCoord.x - MARKER_RAD, moveY + screenCoord.y - MARKER_RAD, MARKER_DIAM, MARKER_DIAM, 0, 360);
 			} else {
 				//マウスでクリックされたマーカーは"X"のような形で表示する。
-//				g2d.drawLine(screenCoord.x - MARKER_RAD, screenCoord.y - MARKER_RAD, screenCoord.x + MARKER_RAD, screenCoord.y + MARKER_RAD);
-//				g2d.drawLine(screenCoord.x - MARKER_RAD, screenCoord.y + MARKER_RAD, screenCoord.x + MARKER_RAD, screenCoord.y - MARKER_RAD);
 				g2d.drawLine(moveX + screenCoord.x - MARKER_RAD, moveY + screenCoord.y - MARKER_RAD, moveX + screenCoord.x + MARKER_RAD, moveY + screenCoord.y + MARKER_RAD);
 				g2d.drawLine(moveX + screenCoord.x - MARKER_RAD, moveY + screenCoord.y + MARKER_RAD, moveX + screenCoord.x + MARKER_RAD, moveY + screenCoord.y - MARKER_RAD);
 			}

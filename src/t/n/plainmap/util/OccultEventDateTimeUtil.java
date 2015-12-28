@@ -1,4 +1,4 @@
-package t.n.plainmap.dto;
+package t.n.plainmap.util;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -26,7 +26,7 @@ public class OccultEventDateTimeUtil {
 		return parseFormatter.parse(line.replace("h", "").replace("m", ""));
 	}
 
-	static String formatDate(Date firstEventTime) {
+	public static String formatDate(Date firstEventTime) {
 		return dateFormatter.format(firstEventTime);
 	}
 
