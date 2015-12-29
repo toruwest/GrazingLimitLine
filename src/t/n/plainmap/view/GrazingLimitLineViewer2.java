@@ -71,6 +71,7 @@ import t.n.gps.GpsEventListener;
 import t.n.gps.GpsSerialDeviceHandler;
 import t.n.gps.GpsSerialDeviceUtil;
 import t.n.map.IFetchingStatusObserver;
+import t.n.map.IAltitudeFetchStatusObserver;
 import t.n.map.LonLatFormat;
 import t.n.map.OsType;
 import t.n.map.common.KokudoTile;
@@ -79,6 +80,7 @@ import t.n.map.common.LocationInfo;
 import t.n.map.common.LonLat;
 import t.n.map.common.util.LonLatUtil;
 import t.n.map.common.util.TileUtil;
+import t.n.map.http.AltitudeDataGetter;
 import t.n.plainmap.AppConfig;
 import t.n.plainmap.GpsDeviceComboModel;
 import t.n.plainmap.IMoveToLocationListener;
@@ -106,7 +108,7 @@ import t.n.plainmap.view.dialog.ProxyConfigDialog;
  * 流用・改変後のソースコードについて、オリジナル著作者の著作物であると誤解されることの無いよう、注意してください。
  */
 public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMovementObserver,
- GpsEventListener, IDialogStatusObserver, ILimitLineTableEventListener, IObserveTableEventListener, IMoveToLocationListener {
+ GpsEventListener, IDialogStatusObserver, ILimitLineTableEventListener, IObserveTableEventListener, IMoveToLocationListener, IAltitudeFetchStatusObserver {
 	private static final String 標準地図 = "標準地図";
 
 	private static final String 航空写真 = "航空写真";
@@ -142,7 +144,6 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 
 	private MapPreference pref;
 
-
 	private boolean isObserveLocationAddEenabled = false;
 
 	private final IDialogStatusObserver dialogStatusObserver = this;
@@ -166,7 +167,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 
 	private Color mapTypeChangeButtonDefaultColor;
 
-//	protected String occult4DataDir;
+	private final AltitudeDataGetter getter;
 
 	private static final Color mapTypeChangeButtonDisabledColor = Color.LIGHT_GRAY;
 
@@ -299,6 +300,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 		tileImageManager = new TileImageManagerImpl(this, mapParam, pref);
 		mapPanel = new GrazingMapPanel2(mapParam, tileImageManager, this);
 		mapParam.setMapRect(mapPanel.getBounds());
+        getter = new AltitudeDataGetter(this);
 
 		initComponents();
 
@@ -516,7 +518,7 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
             @Override
 			public void actionPerformed(java.awt.event.ActionEvent evt) {
             	observeLocationTable.removeSelectedEventDateLocation();
-            	observeLocationTable.saveFile(new File(appDataDir, OBSERVE_LOCATION_DATA_FILE));
+            	observeLocationTable.saveLocationInfo(new File(appDataDir, OBSERVE_LOCATION_DATA_FILE));
             	boolean b = observeLocationTable.getRowCount() > 0;
             	copyObserveLocationsButton.setEnabled(b);
             }
@@ -705,9 +707,9 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 	}
 
 	@Override
-	//マウスをクリックして観測地を指定された。
 	public void notifyMouseClickedLonLat(LonLat lonlat) {
 		if(isObserveLocationAddEenabled) {
+			//マウスをクリックして観測地を指定された。
 			String[] tmp = observeLocationDialog.getEventDateName();
 			String eventDate = tmp[0];
 			String eventName = tmp[1];
@@ -719,13 +721,16 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 
 				//テーブルが更新されたら､直ちに保存する。常に同じファイルに上書きする。保存はシリアライゼーションによる。
 				//読み込みは起動時に自動的に行う。
-                observeLocationTable.saveFile(new File(appDataDir, OBSERVE_LOCATION_DATA_FILE));
+                observeLocationTable.saveLocationInfo(new File(appDataDir, OBSERVE_LOCATION_DATA_FILE));
 
 				//観測候補地の表が一行以上あったら、クリップボードにコピーできるようにする。
 				boolean b = observeLocationTable.getRowCount() > 0;
 				copyObserveLocationsButton.setEnabled(b);
 			}
 		}
+		//クリックされた地点の標高を国土地理院のサーバーからgetして表示する。
+		getter.startFetching((float)lonlat.getLongitude(), (float)lonlat.getLatitude());
+
 		mapPanel.repaint();
 	}
 
@@ -744,6 +749,16 @@ public class GrazingLimitLineViewer2 implements IFetchingStatusObserver, MouseMo
 			});
 			logger.log(Level.WARNING, "locationInfoがnullでした。");
 		}
+	}
+
+	@Override
+	public void notifySuccess(double lon, double lat, double altitude) {
+		altitudeTextField.setText(String.valueOf(altitude));
+	}
+
+	@Override
+	public void notifyNotFound(double lon, double lat) {
+		altitudeTextField.setText("-----");
 	}
 
 	@Override

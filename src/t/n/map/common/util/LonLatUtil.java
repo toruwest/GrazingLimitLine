@@ -221,10 +221,10 @@ public class LonLatUtil {
 	public final static String southRegionString = "20°25′31″";//最南端 	東京都　沖ノ鳥島
 	public final static String northRegionString = "45°33′28″";//最北端 	北海道　択捉島
 
-	private final static double northRegion;
-	private final static double eastRegion;
-	private final static double southRegion;
-	private final static double westRegion;
+	public final static double northRegion;
+	public final static double eastRegion;
+	public final static double southRegion;
+	public final static double westRegion;
 
 	static {
 		eastRegion = LonLatUtil.parseDegMinSec(eastRegionString);

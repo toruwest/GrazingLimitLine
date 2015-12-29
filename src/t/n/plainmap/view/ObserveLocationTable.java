@@ -135,7 +135,7 @@ public class ObserveLocationTable extends JTable {
 		}
 	}
 
-	public void saveFile(File file) {
+	public void saveLocationInfo(File file) {
 		try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
 			oos.writeObject(observeLocationTableModel.getBList());
 			oos.writeObject(observeLocationTableModel.getDateList());

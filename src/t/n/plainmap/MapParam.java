@@ -33,7 +33,7 @@ public class MapParam {
 
 	public void setCenterLonLat(LonLat location) {
 		if(location != null) {
-			System.out.println(getClass().getSimpleName() + ": location:" + location.toString());
+			//System.out.println(getClass().getSimpleName() + ": location:" + location.toString());
 			this.centerLonLat = location;
 			fireMapParamChangeEvent();
 		}
