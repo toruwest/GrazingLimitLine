@@ -1,7 +1,6 @@
 package t.n.plainmap.view.dialog;
 
 import java.awt.Desktop;
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
@@ -44,8 +43,7 @@ public class OpeningMsgDialog extends JDialog {
 "限界線ルートデータを提供してくださった、<a href=\"http://www2.wbs.ne.jp/~spica/index.htm\">鈴木寿氏</a>、国立天文台の<a href=\"http://optik2.mtk.nao.ac.jp/~somamt/\">相馬氏</a>、<a href=\"http://www.chijinshokan.co.jp/\">地人書館</a>、その他<a href=\"http://astro-limovie.info/jclo/index.html\">星食観測日本地域コーディネーター</a>の関係各位に感謝いたします。<br>" +
 "Occult4を提供してくださった、<a href=\"http://lunar-occultations.com/iota/occult4.htm\">David Herald氏</a>に感謝いたします。<br>" +
 "<h3>本ソフトの著作権者の連絡先</h3>"+
-"nishino.tooru@gmail.com<br>" +
-
+"toruwest14@gmail.com<br>" +
 "</html>";
 
 	private final String title = "このソフトについて";
