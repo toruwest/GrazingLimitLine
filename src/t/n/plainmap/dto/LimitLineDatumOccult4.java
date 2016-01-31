@@ -85,6 +85,8 @@ public class LimitLineDatumOccult4 implements ILimitLineDatum {
 	@Getter @Setter
 	private boolean isHilighted;
 
+	private List<LonLat> minusOneDegLineList;
+
 	public LimitLineDatumOccult4(String limitLineFile, String absPath, List<String> lines, Color color) {
 		this.filename = limitLineFile;
 		// ZIPファイルの中にあるイメージを、appDirの下に展開しておいて、それを使う。
@@ -249,5 +251,14 @@ public class LimitLineDatumOccult4 implements ILimitLineDatum {
 			return m.group(1);
 		}
 		return null;
+	}
+
+	/**
+	 * 未対応なので、空のListを返す。
+	 */
+	@Override
+	public List<LonLat> getMinusOneDegLineList() {
+		if(minusOneDegLineList == null) minusOneDegLineList = new ArrayList<>();
+		return minusOneDegLineList;
 	}
 }

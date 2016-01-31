@@ -25,9 +25,10 @@ import t.n.plainmap.dto.ILimitLineDatum;
 public class GrazingMapPanel2 extends MapPanel implements ILimitLineTableEventListener {
 	private static final int MARKER_RAD = 10;
 	private static final int MARKER_DIAM = MARKER_RAD * 2;
-
+	private static float DASH[] = {10.0f, 3.0f};
 	private static final Stroke HILIGHTED_STROKE = new BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);;
 	private static final Stroke NORMAL_STROKE    = new BasicStroke(1f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
+	private static final Stroke MINUS_ONE_DEG_LINE_STROKE = new BasicStroke(0.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER, 1f, DASH, 0f);
 
 	//TableModelとインスタンスを共有する。
 	private List<LonLat> observerLocationList = null;
@@ -99,7 +100,7 @@ public class GrazingMapPanel2 extends MapPanel implements ILimitLineTableEventLi
 				continue;
 			}
 
-			GeneralPath path = new GeneralPath();
+			GeneralPath path1 = new GeneralPath();
 			if(datum.isHilighted()) {
 				//強調表示
 				g2d.setStroke(HILIGHTED_STROKE);
@@ -112,40 +113,54 @@ public class GrazingMapPanel2 extends MapPanel implements ILimitLineTableEventLi
 			AffineTransform saveXform = g2d.getTransform();
 			g2d.translate(moveX, moveY);
 
-			boolean first = true;
+			boolean first1 = true;
 			EventDescription desc = null;
 			//限界線データは、JCLOのも、Occult4のも、概ね経度が小さい順に格納されている。日本だと、説明文の位置を、経度が大きい(日付変更線に近い)点の近くにした方が、
 			//海上に表示され、地図と重ならず、見やすいことが多いので、大きい方から始める。
 			//以下は緯度・経度ともにソートされていない。descを重ならないよう描画するために、緯度(y座標)でソートしておく。
 			List<LonLat> l = datum.getLonlatList();
 			for(int i = l.size() - 1; i >= 0; i--) {
-				LonLat lonlat = l.get(i);
-				Point screenCoord = TileImageManagerUtil.getScreenCoordFromLonlat(lonlat, originTileNoX, originTileNoY, originX, originY, mapParam.getZoomLevel());
+				LonLat lonlat1 = l.get(i);
+				Point screenCoord1 = TileImageManagerUtil.getScreenCoordFromLonlat(lonlat1, originTileNoX, originTileNoY, originX, originY, mapParam.getZoomLevel());
 
-				if(first) {
-					path.moveTo(screenCoord.x, screenCoord.y);
+				if(first1) {
+					path1.moveTo(screenCoord1.x, screenCoord1.y);
 					//他のdescの矩形と重ならないよう、位置を調整する。
 					//星食現象の説明を初期化
-					desc = new EventDescription(screenCoord, datum);
+					desc = new EventDescription(screenCoord1, datum);
 					//後でy座標順にソート
 					descList.add(desc);
 
-					first = false;
+					first1 = false;
 				} else {
-					path.lineTo(screenCoord.x, screenCoord.y);
+					path1.lineTo(screenCoord1.x, screenCoord1.y);
 				}
 			}
 			//限界線の描画
-			g2d.draw(path);
+			g2d.draw(path1);
+
+			GeneralPath path2 = new GeneralPath();
+			g2d.setStroke(MINUS_ONE_DEG_LINE_STROKE);
+			List<LonLat> l2 = datum.getMinusOneDegLineList();
+			boolean first2 = true;
+			for(int i = l2.size() - 1; i >= 0; i--) {
+				LonLat lonlat2 = l2.get(i);
+				Point screenCoord2 = TileImageManagerUtil.getScreenCoordFromLonlat(lonlat2, originTileNoX, originTileNoY, originX, originY, mapParam.getZoomLevel());
+				if(first2) {
+					path2.moveTo(screenCoord2.x, screenCoord2.y);
+					first2 = false;
+				} else {
+					path2.lineTo(screenCoord2.x, screenCoord2.y);
+				}
+			}
+			//-1度ラインの描画
+			g2d.draw(path2);
 
 			g2d.setTransform(saveXform);
 		}
 
 		//descの矩形どうしが重ならないよう、位置を調整する。
-//		dump(g2d, descList);
 		adjust(g2d, descList);
-//		System.out.println("after");
-//		dump(g2d, descList);
 
 		//説明の描画
 		for(EventDescription desc : descList) {

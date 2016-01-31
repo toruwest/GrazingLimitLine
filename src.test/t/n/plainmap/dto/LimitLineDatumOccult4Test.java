@@ -1,25 +1,25 @@
 package t.n.plainmap.dto;
 
 import static org.junit.Assert.*;
+import static t.n.plainmap.dto.ILimitLineDatum.IMAGE_EXT;
+import static t.n.plainmap.dto.ILimitLineDatum.TEXT_EXT;
 
 import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.text.ParseException;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.regex.Matcher;
 
 import org.junit.Test;
 
 import t.n.plainmap.LimitLineReader;
-import t.n.plainmap.dto.LimitLineDatumOccult4;
 import t.n.plainmap.util.LimitLineColorUtil;
+import t.n.plainmap.util.LimitLineReaderUtil;
 import t.n.plainmap.util.OccultEventDateTimeUtil;
 
 public class LimitLineDatumOccult4Test {
@@ -28,20 +28,43 @@ public class LimitLineDatumOccult4Test {
 
 	@Test
 	public void testParse() throws IOException {
-		List<LimitLineDatumOccult4> data;
-
-		data = new ArrayList<>();
+		List<ILimitLineDatum> data = new ArrayList<>();
 		File dataDir = new File("file");
+		LimitLineReader reader = new LimitLineReader(dataDir);
+
 		if(dataDir .exists() && dataDir.isDirectory()) {
 			int colorIndex = 0;
 			for(File f : dataDir.listFiles()) {
-				if(f.getName().endsWith(ILimitLineDatum.TEXT_EXT)) {
-					Color c = LimitLineColorUtil.getLineColor(colorIndex++);
-					List<String> lines = Files.readAllLines(f.toPath());
-					data.add(new LimitLineDatumOccult4(f.getName(), f.getAbsolutePath(), lines, c));
+				Color c = LimitLineColorUtil.getLineColor(colorIndex++);
+				List<String> lines = Files.readAllLines(f.toPath());
+				String fileName = f.getAbsolutePath();
+
+				ILimitLineDatum datum = null;
+				//内容でJCLO, Occult4のどちらのフォーマットかを判定する。
+				switch(getPredictionDataFileType(f, reader, lines)) {
+				case jclo:
+					datum = new LimitLineDatumJCLO(fileName, fileName.replace(TEXT_EXT, IMAGE_EXT), lines, c);
+					break;
+				case occult4:
+					datum = new LimitLineDatumOccult4(fileName, fileName.replace(TEXT_EXT, IMAGE_EXT), lines, c);
+					break;
+				default:
+					//TODO
 				}
+				data.add(datum);
 			}
+		} else {
+			fail("ディレクトリfileが見つかりません。ここにテスト対象のファイルを格納してあります。");
 		}
+	}
+
+	private LimitDataLineType getPredictionDataFileType(File f, LimitLineReader reader, List<String> lines) {
+		LimitDataLineType type = LimitDataLineType.unknown;
+
+		if(f.getName().endsWith(ILimitLineDatum.TEXT_EXT)) {
+			type = LimitLineReaderUtil.checkDataFileType(lines);
+		}
+		return type;
 	}
 
 	@Test

@@ -1,6 +1,7 @@
 package t.n.plainmap.dto;
 
 import java.awt.Color;
+import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -59,9 +60,24 @@ public class LimitLineDatumJCLO implements ILimitLineDatum {
 	@Getter
 	private final String imageFileAbsPath;
 
-	//緯度・経度(複数)、結ぶと直線状になる
+	//緯度・経度(複数)、結ぶと直線状になる。厳密にはカーブしている。
 	@Getter
 	private final List<LonLat> lonlatList;
+
+	//-1度ライン
+	@Getter
+	private final List<LonLat> minusOneDegLineList;
+
+	// 標高 (仰角?)
+	@Getter
+	private float alt;
+
+	//方位角
+	@Getter
+	private float azimuth;
+
+	@Getter
+	private float tanZ;
 
 	@Getter
 	private final Color color;
@@ -73,12 +89,9 @@ public class LimitLineDatumJCLO implements ILimitLineDatum {
 	@Getter @Setter
 	private boolean isHilighted;
 
-//	public LimitLineDatumJCLO(File limitLineFile, List<String> lines, Color color) {
 	public LimitLineDatumJCLO(String limitLineFilename, String imageAbsPath, List<String> lines, Color color) {
-//		this.filename = limitLineFile.getName();
 		this.filename = limitLineFilename;
-//		this.imageFileAbsPath = limitLineFile.getAbsolutePath().replace(TEXT_EXT, IMAGE_EXT);
-		this.imageFileAbsPath = imageAbsPath;//.replace(TEXT_EXT, IMAGE_EXT);
+		this.imageFileAbsPath = imageAbsPath;
 		this.isVisible = true;
 		this.isHilighted = false;
 		this.color = color;
@@ -127,7 +140,24 @@ public class LimitLineDatumJCLO implements ILimitLineDatum {
 
 		//以下の容量は行数から分かるので、あらかじめ確保しておく。
 		lonlatList = new ArrayList<>(lines.size());
+		minusOneDegLineList = new ArrayList<>(lines.size());
 		readLimitLine(lines);
+	}
+
+	/**
+	 * 標高による補正を行う。仮にtanZが2.128で、標高が100mの場合、方位角234.7の方向へ212.8mラインが移動する。
+	 * 注意：呼び出し側で、画面上でのピクセルの移動量を、緯度・経度あたりの長さと、画面のピクセルあたりの距離、あるいは緯度・経度を考慮して計算する必要がある。
+	 * 緯度・経度１度あたりの距離は、定数ではなくて、緯度・経度に応じて変化することに留意する。
+	 * また、点の数が少ないので、補完（比例配分)する必要があるかもしれない。元々標高は場所によって変化するので、厳密な線を描こうとしたら、細かく補完しておいて、
+	 * 各点ごとに標高を求め、補正値を計算する必要がある。
+	 * @param altitudeOfLocation
+	 * @return X,Y方向のオフセット(単位：メートル)
+	 */
+	public Point2D.Double computeOffset(final float altitudeOfLocation) {
+		double radians = Math.toRadians(azimuth);
+		float offsetX = (float) (tanZ * altitudeOfLocation * Math.cos(radians));
+		float offsetY = (float) (tanZ * altitudeOfLocation * Math.sin(radians));
+		return new Point2D.Double(offsetX, offsetY);
 	}
 
 	private String[] parseLine0(String line) {
@@ -159,18 +189,55 @@ public class LimitLineDatumJCLO implements ILimitLineDatum {
 				//TODO フォーマット異常の場合の対処
 				//lonlat.isInvalid();
 				lonlatList.add(lonlat);
+				//-1度ライン
+				minusOneDegLineList.add(new LonLat(lonlat.getLongitude(), parseMinusOmeDegLine(split)));
 
 				//最初の行が最も早い時刻で、最後の行が最も遅いようなので、最初と最後の行だけを使う。
 				if(isFirstEvent) {
 					firstEventTime = parseEventTime(split);
 					isFirstEvent = false;
 				} else {
-					//最後の実行結果だけが残る。毎回処理されて無駄だけど、目をつむる。
+					//最後の実行結果だけが残る。ループの度に処理されて無駄だけど、目をつむる。
 					lastEventTime = parseEventTime(split);
 				}
+				alt = Float.parseFloat(split[10]);
+				azimuth = Float.parseFloat(split[11]);
+				tanZ = Float.parseFloat(split[12]);
 			}
 		}
 		eventTime = firstEventTime.append("-").append(lastEventTime).toString();
+	}
+
+	/**
+	 * 注意：２０１５年の接食限界線のテキストファイルに、緯度が60以上となっているデータがあった。
+	 * 本来は60未満のはずだが、これをエラーとして扱うと不都合なことになるので、目をつむるようにした。
+	 * @param split
+	 * @return lonlat
+	 */
+	private LonLat parseLonLat(String[] split) {
+		double lon = LonLatUtil.parseDegMinSec(split[0], split[1], "0");
+		double lat = LonLatUtil.parseDegMinSec(split[2], split[3], split[4]);
+		LonLat lonLat = new LonLat(lon, lat);
+		if(lonLat.isInvalid()) {
+			System.out.println();
+		}
+		return lonLat;
+	}
+
+	/**
+	 * -1度ラインを計算する。経度は限界線の経度と同じで、緯度だけが違う。
+	 * なお、緯度の「度」の単位は、限界線と同じ値(添え字が2)を使うようになっている。
+	 * @param split
+	 * @return lonlat
+	 */
+	private double parseMinusOmeDegLine(String[] split) {
+//		double lon = LonLatUtil.parseDegMinSec(split[0], split[1], "0");
+		double lat = LonLatUtil.parseDegMinSec(split[2], split[5], split[6]);
+//		LonLat lonLat = new LonLat(lon, lat);
+//		if(lonLat.isInvalid()) {
+//			System.out.println();
+//		}
+		return lat;
 	}
 
 	private StringBuilder parseEventTime(String[] split) {
@@ -182,22 +249,6 @@ public class LimitLineDatumJCLO implements ILimitLineDatum {
 		sb.append(split[9]);
 
 		return sb;
-	}
-
-	/**
-	 * 注意：２０１５年の接食限界線のテキストファイルに、緯度が60以上となっているデータがあった。
-	 * 本来は59以下のはずだが、これをエラーとして扱うと不都合なことになるので、目をつむるようにした。
-	 * @param split
-	 * @return
-	 */
-	private LonLat parseLonLat(String[] split) {
-		double lon = LonLatUtil.parseDegMinSec(split[0], split[1], "0");
-		double lat = LonLatUtil.parseDegMinSec(split[2], split[3], split[4]);
-		LonLat lonLat = new LonLat(lon, lat);
-		if(lonLat.isInvalid()) {
-			System.out.println();
-		}
-		return lonLat;
 	}
 
 	@Override

@@ -33,6 +33,8 @@ public interface ILimitLineDatum {
 
 	List<LonLat> getLonlatList();
 
+	List<LonLat> getMinusOneDegLineList();
+
 	Color getColor();
 
 	boolean isVisible();
