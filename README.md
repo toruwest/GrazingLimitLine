@@ -1,4 +1,4 @@
-このソフトについて
+#このソフトについて
 
 このソフトは、星食の限界線データを用いて、地図上で観測地の候補を検討するために使います。
 従来は、同じ目的で、鈴木寿氏提供の<a href=\"http://www2.wbs.ne.jp/~spica/Grazing/2015/densi/2015GrazingMap.htm\">Webアプリ</a>が使われていましたが、これが依存している国土地理院のサービスが停止したため使えなくなりましたので、代わりに使えるソフトが必要だろうということで、開発しました。
@@ -9,7 +9,7 @@
 
 このアプリケーションソフトウェアは、無償で利用できます。
 
-ダウンロード
+#ダウンロード
 
 GrazingLimitLine.jar をクリックすると、"This file has been truncated, but you can view the full file.”と書かれたページになります。
 これの”View Raw”を右クリックすると、GrazingLimitLine.jarというファイルのダウンロードが始まります。
@@ -19,10 +19,13 @@ GrazingLimitLine.jar をクリックすると、"This file has been truncated, b
 
 　http://www.oracle.com/technetwork/java/javase/downloads/index.html
 
+#サポートしているOS
+
 動作確認を行っているのはWindows 7とOS X 10.10 (Yosemite、こちらがメイン)です。
+Windows 8, 10でも大丈夫だと思われます。
 Linux系のOSでも動くはずですが、確認していません。
 
-起動方法
+#起動方法
 
  Windowsではエクスプローラー、マッキントッシュではファインダーで、このファイルをダブルクリックして起動します。
 
