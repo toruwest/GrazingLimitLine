@@ -11,23 +11,23 @@
 
 このアプリケーションソフトウェアは、無償で利用できます。
 
-### ダウンロード
-
-GrazingLimitLine.jar をクリックすると、"This file has been truncated, but you can view the full file.”と書かれたページになります。
-これの”View Raw”を右クリックすると、GrazingLimitLine.jarというファイルのダウンロードが始まります。
-これが実行ファイルです。インストーラーなどは付属していません。
-
-なお、実行にあたり、Java Runtime Environment (JRE)が必要となりますので、以下からダウンロード・インストールしておいてください。
-
-　http://www.oracle.com/technetwork/java/javase/downloads/index.html
-
-"GrazingLimitLineの使い方.pdf"についても、クリックするとブラウザ内で表示されますが、日本語の文字が正しく表示されないようですので、ダウンロードして見た方がいいと思います。
-クリックして移動する先の画面の右上に"Raw", "History"と並んでいる、"Raw"の方をクリックするとダウンロードできます。
-
 ### サポートしているOS
 
 動作確認を行っているのはWindows 7とOS X 10.10 (Yosemite、こちらがメイン)です。
 Windows 8, 10や、Linux系のOSでも動くはずですが、確認していません。
+
+### ダウンロード
+
+右上に"Download ZIP"と書かれたボタンがありますので、これをクリックするとダウンロードできます。
+
+ダウンロードされたZIPファイルを展開して得られる、GrazingLimitLine.jarが実行ファイルです。インストーラーなどは付属していません。
+"GrazingLimitLineの使い方.pdf"が、マニュアルになります。
+
+この他のファイルは、必要ありませんので、削除しても構いません。
+
+なお、実行にあたり、Java Runtime Environment (JRE)が必要となりますので、以下からダウンロード・インストールしておいてください。
+
+　http://www.oracle.com/technetwork/java/javase/downloads/index.html
 
 ### 限界線データおよび月縁図について
 
